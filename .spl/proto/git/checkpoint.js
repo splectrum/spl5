@@ -11,7 +11,7 @@
  */
 
 import { execSync } from 'node:child_process';
-import { writeFileSync, unlinkSync, readdirSync, rmSync } from 'node:fs';
+import { writeFileSync, unlinkSync, readdirSync, rmSync, copyFileSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { git, gitSafe } from './lib.js';
 
@@ -97,6 +97,7 @@ Format:
 function resetAutoMemory(root) {
   const escapedRoot = root.replace(/\//g, '-');
   const memoryDir = join(root, '.claude', 'projects', escapedRoot, 'memory');
+  // Clear
   try {
     const entries = readdirSync(memoryDir);
     for (const entry of entries) {
@@ -104,6 +105,14 @@ function resetAutoMemory(root) {
     }
   } catch {
     // Memory dir may not exist — that's fine
+  }
+  // Prime from template
+  const template = join(root, '.spl', 'templates', 'auto-memory.md');
+  try {
+    mkdirSync(memoryDir, { recursive: true });
+    copyFileSync(template, join(memoryDir, 'MEMORY.md'));
+  } catch {
+    // No template — that's fine
   }
 }
 
