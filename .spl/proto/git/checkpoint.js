@@ -11,7 +11,7 @@
  */
 
 import { execSync } from 'node:child_process';
-import { writeFileSync, unlinkSync } from 'node:fs';
+import { writeFileSync, unlinkSync, readdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { git, gitSafe } from './lib.js';
 
@@ -82,6 +82,10 @@ Format:
     const hash = git(root, 'rev-parse', '--short', 'HEAD');
     const fullHash = git(root, 'rev-parse', 'HEAD');
 
+    // Reset auto-memory — checkpoint is a rollback point,
+    // memory should not bleed across checkpoints
+    resetAutoMemory(root);
+
     return {
       checkpoint: hash,
       hash: fullHash,
@@ -89,6 +93,19 @@ Format:
       message: commitMsg,
     };
   };
+}
+
+function resetAutoMemory(root) {
+  const escapedRoot = root.replace(/\//g, '-').replace(/^-/, '');
+  const memoryDir = join(root, '.claude', 'projects', escapedRoot, 'memory');
+  try {
+    const entries = readdirSync(memoryDir);
+    for (const entry of entries) {
+      rmSync(join(memoryDir, entry), { recursive: true, force: true });
+    }
+  } catch {
+    // Memory dir may not exist — that's fine
+  }
 }
 
 function callClaude(prompt) {
