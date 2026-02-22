@@ -77,14 +77,13 @@ Format:
       git(root, 'push');
     } finally {
       try { unlinkSync(msgFile); } catch { /* ok */ }
+      // Reset auto-memory — checkpoint is a rollback point,
+      // memory should not bleed across checkpoints
+      resetAutoMemory(root);
     }
 
     const hash = git(root, 'rev-parse', '--short', 'HEAD');
     const fullHash = git(root, 'rev-parse', 'HEAD');
-
-    // Reset auto-memory — checkpoint is a rollback point,
-    // memory should not bleed across checkpoints
-    resetAutoMemory(root);
 
     return {
       checkpoint: hash,
@@ -96,7 +95,7 @@ Format:
 }
 
 function resetAutoMemory(root) {
-  const escapedRoot = root.replace(/\//g, '-').replace(/^-/, '');
+  const escapedRoot = root.replace(/\//g, '-');
   const memoryDir = join(root, '.claude', 'projects', escapedRoot, 'memory');
   try {
     const entries = readdirSync(memoryDir);
