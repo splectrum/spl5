@@ -1,0 +1,330 @@
+{
+  "context-view/scan": [
+    {
+      "context": "/",
+      "config": {
+        "module": ".spl/proto/context-view/scan.js"
+      }
+    }
+  ],
+  "context-view/sync": [
+    {
+      "context": "/",
+      "config": {
+        "module": ".spl/proto/context-view/sync.js"
+      }
+    }
+  ],
+  "git/changelog": [
+    {
+      "context": "/",
+      "config": {
+        "module": ".spl/proto/git/changelog.js"
+      }
+    }
+  ],
+  "git/checkpoint": [
+    {
+      "context": "/",
+      "config": {
+        "module": ".spl/proto/git/checkpoint.js"
+      }
+    }
+  ],
+  "git/log": [
+    {
+      "context": "/",
+      "config": {
+        "module": ".spl/proto/git/log.js"
+      }
+    }
+  ],
+  "git/status": [
+    {
+      "context": "/",
+      "config": {
+        "module": ".spl/proto/git/status.js"
+      }
+    }
+  ],
+  "mc.core/create": [
+    {
+      "context": "/",
+      "config": {
+        "module": ".spl/proto/mc.core/create.js"
+      }
+    }
+  ],
+  "mc.core/del": [
+    {
+      "context": "/",
+      "config": {
+        "module": ".spl/proto/mc.core/del.js"
+      }
+    }
+  ],
+  "mc.core/list": [
+    {
+      "context": "/",
+      "config": {
+        "module": ".spl/proto/mc.core/list.js"
+      }
+    }
+  ],
+  "mc.core/read": [
+    {
+      "context": "/",
+      "config": {
+        "module": ".spl/proto/mc.core/read.js"
+      }
+    }
+  ],
+  "mc.core/update": [
+    {
+      "context": "/",
+      "config": {
+        "module": ".spl/proto/mc.core/update.js"
+      }
+    }
+  ],
+  "mc.data/create": [
+    {
+      "context": "/",
+      "config": {
+        "module": ".spl/proto/mc.data/create.js"
+      }
+    }
+  ],
+  "mc.data/del": [
+    {
+      "context": "/",
+      "config": {
+        "module": ".spl/proto/mc.data/del.js"
+      }
+    }
+  ],
+  "mc.data/list": [
+    {
+      "context": "/",
+      "config": {
+        "module": ".spl/proto/mc.data/list.js"
+      }
+    }
+  ],
+  "mc.data/read": [
+    {
+      "context": "/",
+      "config": {
+        "module": ".spl/proto/mc.data/read.js"
+      }
+    }
+  ],
+  "mc.data/update": [
+    {
+      "context": "/",
+      "config": {
+        "module": ".spl/proto/mc.data/update.js"
+      }
+    }
+  ],
+  "mc.exec/complete": [
+    {
+      "context": "/",
+      "config": {
+        "module": ".spl/proto/mc.exec/complete.js"
+      }
+    }
+  ],
+  "mc.exec/create": [
+    {
+      "context": "/",
+      "config": {
+        "module": ".spl/proto/mc.exec/create.js"
+      }
+    }
+  ],
+  "mc.exec/drop": [
+    {
+      "context": "/",
+      "config": {
+        "module": ".spl/proto/mc.exec/drop.js"
+      }
+    }
+  ],
+  "mc.exec/fail": [
+    {
+      "context": "/",
+      "config": {
+        "module": ".spl/proto/mc.exec/fail.js"
+      }
+    }
+  ],
+  "mc.meta/create": [
+    {
+      "context": "/",
+      "config": {
+        "module": ".spl/proto/mc.meta/create.js"
+      }
+    }
+  ],
+  "mc.meta/del": [
+    {
+      "context": "/",
+      "config": {
+        "module": ".spl/proto/mc.meta/del.js"
+      }
+    }
+  ],
+  "mc.meta/list": [
+    {
+      "context": "/",
+      "config": {
+        "module": ".spl/proto/mc.meta/list.js"
+      }
+    }
+  ],
+  "mc.meta/read": [
+    {
+      "context": "/",
+      "config": {
+        "module": ".spl/proto/mc.meta/read.js"
+      }
+    }
+  ],
+  "mc.meta/update": [
+    {
+      "context": "/",
+      "config": {
+        "module": ".spl/proto/mc.meta/update.js"
+      }
+    }
+  ],
+  "mc.proto/resolve": [
+    {
+      "context": "/",
+      "config": {
+        "module": ".spl/proto/mc.proto/resolve.js"
+      }
+    }
+  ],
+  "mc.raw/copy": [
+    {
+      "context": "/",
+      "config": {
+        "module": ".spl/proto/mc.raw/copy.js"
+      }
+    }
+  ],
+  "mc.raw/create": [
+    {
+      "context": "/",
+      "config": {
+        "module": ".spl/proto/mc.raw/create.js"
+      }
+    }
+  ],
+  "mc.raw/del": [
+    {
+      "context": "/",
+      "config": {
+        "module": ".spl/proto/mc.raw/del.js"
+      }
+    }
+  ],
+  "mc.raw/list": [
+    {
+      "context": "/",
+      "config": {
+        "module": ".spl/proto/mc.raw/list.js"
+      }
+    }
+  ],
+  "mc.raw/move": [
+    {
+      "context": "/",
+      "config": {
+        "module": ".spl/proto/mc.raw/move.js"
+      }
+    }
+  ],
+  "mc.raw/read": [
+    {
+      "context": "/",
+      "config": {
+        "module": ".spl/proto/mc.raw/read.js"
+      }
+    }
+  ],
+  "mc.raw/update": [
+    {
+      "context": "/",
+      "config": {
+        "module": ".spl/proto/mc.raw/update.js"
+      }
+    }
+  ],
+  "mc.xpath/resolve": [
+    {
+      "context": "/",
+      "config": {
+        "module": ".spl/proto/mc.xpath/resolve.js"
+      }
+    }
+  ],
+  "spl/init": [
+    {
+      "context": "/",
+      "config": {
+        "module": ".spl/proto/spl/init.js"
+      }
+    }
+  ],
+  "stats/collect": [
+    {
+      "context": "/",
+      "config": {
+        "module": ".spl/proto/stats/collect.js"
+      }
+    }
+  ],
+  "test/run": [
+    {
+      "context": "/",
+      "config": {
+        "module": ".spl/proto/test/run.js"
+      }
+    }
+  ],
+  "evaluate/run": [
+    {
+      "context": "/projects",
+      "config": {
+        "module": ".spl/proto/evaluate/run.js"
+      }
+    }
+  ],
+  "evaluate/status": [
+    {
+      "context": "/projects",
+      "config": {
+        "module": ".spl/proto/evaluate/status.js"
+      }
+    }
+  ],
+  "tidy/clean": [
+    {
+      "context": "/projects",
+      "config": {
+        "module": "projects/.spl/proto/tidy/clean.js"
+      }
+    }
+  ],
+  "tidy/scan": [
+    {
+      "context": "/projects",
+      "config": {
+        "module": "projects/.spl/proto/tidy/scan.js"
+      }
+    }
+  ]
+}
