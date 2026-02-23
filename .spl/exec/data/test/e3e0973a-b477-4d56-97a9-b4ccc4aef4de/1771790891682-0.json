@@ -1,0 +1,484 @@
+{
+  "uid": "e3e0973a-b477-4d56-97a9-b4ccc4aef4de",
+  "protocol": "test",
+  "context": "/",
+  "root": "/home/herma/splectrum/spl5",
+  "timestamp": "2026-02-22T20:08:11.452Z",
+  "status": "completed",
+  "stdout": "Suite: boot\n  PASS  doc has root\n  PASS  doc has map\n  PASS  doc has resolve\n  PASS  doc has resolvePath\n  PASS  doc has prefix\n  PASS  resolve caches operators\n  PASS  resolve rejects unknown key\n  PASS  resolvePath from root\nSuite: compliance\n  FAIL  process ref accessible from project 16\n         mc.xpath: not found: /projects/16-process-standards/process\n  FAIL  process ref accessible from project 17\n         mc.xpath: not found: /projects/17-evaluator-git/process\n  FAIL  req files readable through reference\n         mc.xpath: not found: /projects/16-process-standards/process/req-project.md\n  FAIL  all five req files present\n         mc.xpath: not found: /projects/17-evaluator-git/process\nSuite: compound\n  FAIL  setup test file\n         mc.xpath: not found: /projects/18-compound-ops\n  FAIL  copy creates independent duplicate\n         mc.xpath: not found: /projects/18-compound-ops/_test_compound.txt\n  FAIL  copy is git-staged\n         copied file should appear in git status\n  FAIL  move relocates file\n         mc.xpath: not found: /projects/18-compound-ops/_test_compound.txt\n  FAIL  move is git-staged\n         moved file should appear in git status\n  PASS  move rejects reference source\n  FAIL  copy works through reference\n         mc.xpath: not found: /projects/16-process-standards/process/req-project.md\n  PASS  changelog shows project history\n  PASS  teardown test files\nSuite: general\n  PASS  P2: config contains only module\n  FAIL  P1: all modules have default export\n         Cannot find module '/home/herma/splectrum/spl5/projects/.spl/proto/tidy/clean.js' imported from /home/herma/splectrum/spl5/.spl/proto/test/lib.js\n  PASS  P7: all operations resolvable\n  PASS  P1: factories return operators\nSuite: git\n  PASS  status returns structured data\n  PASS  status scoped to path\n  PASS  log returns structured commits\n  PASS  log scoped to path\n  PASS  changelog produces markdown\n  PASS  changelog scoped to path\n  PASS  checkpoint rejects missing path\n  PASS  checkpoint rejects missing message\nSuite: mc.core\n  PASS  list root\n  PASS  list with depth\n  PASS  read file\n  PASS  read rejects directory\n  PASS  create and del\n  PASS  update file\nSuite: mc.data\n  PASS  list excludes .spl\n  PASS  read rejects .spl path\n  PASS  create rejects .spl key\nSuite: mc.raw\n  PASS  read as buffer\n  PASS  read as utf-8\n  PASS  read as json\n  PASS  create with string (utf-8 detection)\n  PASS  create with object (json detection)\nSuite: mc.xpath\n  PASS  resolve root\n  PASS  resolve existing directory\n  PASS  resolve existing file\n  PASS  reject nonexistent path\n  PASS  normalise paths\nSuite: parser\n  PASS  parse R-numbered format\n  PASS  parse section format\n  PASS  multi-line numbered items\n  PASS  multi-line bullet gates\nSuite: refs\n  PASS  setup refs test fixtures\n  PASS  resolve file through reference\n  PASS  resolve directory through reference\n  PASS  resolve nested path through reference\n  FAIL  local shadows reference\n         mc.xpath: not found: /projects/15-cascading-references/REQUIREMENTS.md\n  PASS  existing paths have source local\n  PASS  nonexistent ref target rejects\n  PASS  read through reference\n  PASS  read nested through reference\n  PASS  stacked resolve: first layer wins\n  PASS  stacked resolve: fallback to second layer\n  PASS  bucket: single reference layer\n  PASS  bucket: stacked shows all layers\n  FAIL  bucket: local entry included\n         expected truthy, got false\n  PASS  layers: returns dirs, hidden, refs\n  PASS  mc.core/list includes reference entries\n  FAIL  mc.core/list merges local and reference\n         should have local entry\n  PASS  copy-on-write: create in reference dir\n  PASS  copy-on-write: update reference file creates local\n  PASS  del rejects reference-only path\n  PASS  hidden: not resolvable by physical name\n  PASS  hidden: accessible through reference\n  PASS  hidden: excluded from list\n  PASS  hidden: write rejected (reference-only)\n  FAIL  e2e: list docs shows referenced folders and files\n         mc.xpath: not found: /projects/15-cascading-references/docs\n  FAIL  e2e: read file through docs reference\n         mc.xpath: not found: /projects/15-cascading-references/docs/PRINCIPLES.md\n  FAIL  e2e: read nested through docs reference\n         mc.xpath: not found: /projects/15-cascading-references/docs/mycelium/patterns.md\n  FAIL  e2e: list nested reference directory\n         mc.xpath: not found: /projects/15-cascading-references/docs/mycelium\n  FAIL  e2e: flat list through docs references\n         mc.xpath: not found: /projects/15-cascading-references/docs\n  FAIL  e2e: copy-on-write in docs\n         mc.xpath: not found: /projects/15-cascading-references/docs/PRINCIPLES.md\n  FAIL  e2e: process folder referenced into project 16\n         mc.xpath: not found: /projects/16-process-standards\n  FAIL  e2e: read process doc through reference\n         mc.xpath: not found: /projects/16-process-standards/process/build-cycle.md\n  PASS  teardown refs test fixtures\n\n67/89 passed, 22 failed\n",
+  "result": {
+    "passed": 67,
+    "failed": 22,
+    "total": 89,
+    "results": [
+      {
+        "suite": "boot",
+        "test": "doc has root",
+        "pass": true
+      },
+      {
+        "suite": "boot",
+        "test": "doc has map",
+        "pass": true
+      },
+      {
+        "suite": "boot",
+        "test": "doc has resolve",
+        "pass": true
+      },
+      {
+        "suite": "boot",
+        "test": "doc has resolvePath",
+        "pass": true
+      },
+      {
+        "suite": "boot",
+        "test": "doc has prefix",
+        "pass": true
+      },
+      {
+        "suite": "boot",
+        "test": "resolve caches operators",
+        "pass": true
+      },
+      {
+        "suite": "boot",
+        "test": "resolve rejects unknown key",
+        "pass": true
+      },
+      {
+        "suite": "boot",
+        "test": "resolvePath from root",
+        "pass": true
+      },
+      {
+        "suite": "compliance",
+        "test": "process ref accessible from project 16",
+        "pass": false,
+        "error": "mc.xpath: not found: /projects/16-process-standards/process"
+      },
+      {
+        "suite": "compliance",
+        "test": "process ref accessible from project 17",
+        "pass": false,
+        "error": "mc.xpath: not found: /projects/17-evaluator-git/process"
+      },
+      {
+        "suite": "compliance",
+        "test": "req files readable through reference",
+        "pass": false,
+        "error": "mc.xpath: not found: /projects/16-process-standards/process/req-project.md"
+      },
+      {
+        "suite": "compliance",
+        "test": "all five req files present",
+        "pass": false,
+        "error": "mc.xpath: not found: /projects/17-evaluator-git/process"
+      },
+      {
+        "suite": "compound",
+        "test": "setup test file",
+        "pass": false,
+        "error": "mc.xpath: not found: /projects/18-compound-ops"
+      },
+      {
+        "suite": "compound",
+        "test": "copy creates independent duplicate",
+        "pass": false,
+        "error": "mc.xpath: not found: /projects/18-compound-ops/_test_compound.txt"
+      },
+      {
+        "suite": "compound",
+        "test": "copy is git-staged",
+        "pass": false,
+        "error": "copied file should appear in git status"
+      },
+      {
+        "suite": "compound",
+        "test": "move relocates file",
+        "pass": false,
+        "error": "mc.xpath: not found: /projects/18-compound-ops/_test_compound.txt"
+      },
+      {
+        "suite": "compound",
+        "test": "move is git-staged",
+        "pass": false,
+        "error": "moved file should appear in git status"
+      },
+      {
+        "suite": "compound",
+        "test": "move rejects reference source",
+        "pass": true
+      },
+      {
+        "suite": "compound",
+        "test": "copy works through reference",
+        "pass": false,
+        "error": "mc.xpath: not found: /projects/16-process-standards/process/req-project.md"
+      },
+      {
+        "suite": "compound",
+        "test": "changelog shows project history",
+        "pass": true
+      },
+      {
+        "suite": "compound",
+        "test": "teardown test files",
+        "pass": true
+      },
+      {
+        "suite": "general",
+        "test": "P2: config contains only module",
+        "pass": true
+      },
+      {
+        "suite": "general",
+        "test": "P1: all modules have default export",
+        "pass": false,
+        "error": "Cannot find module '/home/herma/splectrum/spl5/projects/.spl/proto/tidy/clean.js' imported from /home/herma/splectrum/spl5/.spl/proto/test/lib.js"
+      },
+      {
+        "suite": "general",
+        "test": "P7: all operations resolvable",
+        "pass": true
+      },
+      {
+        "suite": "general",
+        "test": "P1: factories return operators",
+        "pass": true
+      },
+      {
+        "suite": "git",
+        "test": "status returns structured data",
+        "pass": true
+      },
+      {
+        "suite": "git",
+        "test": "status scoped to path",
+        "pass": true
+      },
+      {
+        "suite": "git",
+        "test": "log returns structured commits",
+        "pass": true
+      },
+      {
+        "suite": "git",
+        "test": "log scoped to path",
+        "pass": true
+      },
+      {
+        "suite": "git",
+        "test": "changelog produces markdown",
+        "pass": true
+      },
+      {
+        "suite": "git",
+        "test": "changelog scoped to path",
+        "pass": true
+      },
+      {
+        "suite": "git",
+        "test": "checkpoint rejects missing path",
+        "pass": true
+      },
+      {
+        "suite": "git",
+        "test": "checkpoint rejects missing message",
+        "pass": true
+      },
+      {
+        "suite": "mc.core",
+        "test": "list root",
+        "pass": true
+      },
+      {
+        "suite": "mc.core",
+        "test": "list with depth",
+        "pass": true
+      },
+      {
+        "suite": "mc.core",
+        "test": "read file",
+        "pass": true
+      },
+      {
+        "suite": "mc.core",
+        "test": "read rejects directory",
+        "pass": true
+      },
+      {
+        "suite": "mc.core",
+        "test": "create and del",
+        "pass": true
+      },
+      {
+        "suite": "mc.core",
+        "test": "update file",
+        "pass": true
+      },
+      {
+        "suite": "mc.data",
+        "test": "list excludes .spl",
+        "pass": true
+      },
+      {
+        "suite": "mc.data",
+        "test": "read rejects .spl path",
+        "pass": true
+      },
+      {
+        "suite": "mc.data",
+        "test": "create rejects .spl key",
+        "pass": true
+      },
+      {
+        "suite": "mc.raw",
+        "test": "read as buffer",
+        "pass": true
+      },
+      {
+        "suite": "mc.raw",
+        "test": "read as utf-8",
+        "pass": true
+      },
+      {
+        "suite": "mc.raw",
+        "test": "read as json",
+        "pass": true
+      },
+      {
+        "suite": "mc.raw",
+        "test": "create with string (utf-8 detection)",
+        "pass": true
+      },
+      {
+        "suite": "mc.raw",
+        "test": "create with object (json detection)",
+        "pass": true
+      },
+      {
+        "suite": "mc.xpath",
+        "test": "resolve root",
+        "pass": true
+      },
+      {
+        "suite": "mc.xpath",
+        "test": "resolve existing directory",
+        "pass": true
+      },
+      {
+        "suite": "mc.xpath",
+        "test": "resolve existing file",
+        "pass": true
+      },
+      {
+        "suite": "mc.xpath",
+        "test": "reject nonexistent path",
+        "pass": true
+      },
+      {
+        "suite": "mc.xpath",
+        "test": "normalise paths",
+        "pass": true
+      },
+      {
+        "suite": "parser",
+        "test": "parse R-numbered format",
+        "pass": true
+      },
+      {
+        "suite": "parser",
+        "test": "parse section format",
+        "pass": true
+      },
+      {
+        "suite": "parser",
+        "test": "multi-line numbered items",
+        "pass": true
+      },
+      {
+        "suite": "parser",
+        "test": "multi-line bullet gates",
+        "pass": true
+      },
+      {
+        "suite": "refs",
+        "test": "setup refs test fixtures",
+        "pass": true
+      },
+      {
+        "suite": "refs",
+        "test": "resolve file through reference",
+        "pass": true
+      },
+      {
+        "suite": "refs",
+        "test": "resolve directory through reference",
+        "pass": true
+      },
+      {
+        "suite": "refs",
+        "test": "resolve nested path through reference",
+        "pass": true
+      },
+      {
+        "suite": "refs",
+        "test": "local shadows reference",
+        "pass": false,
+        "error": "mc.xpath: not found: /projects/15-cascading-references/REQUIREMENTS.md"
+      },
+      {
+        "suite": "refs",
+        "test": "existing paths have source local",
+        "pass": true
+      },
+      {
+        "suite": "refs",
+        "test": "nonexistent ref target rejects",
+        "pass": true
+      },
+      {
+        "suite": "refs",
+        "test": "read through reference",
+        "pass": true
+      },
+      {
+        "suite": "refs",
+        "test": "read nested through reference",
+        "pass": true
+      },
+      {
+        "suite": "refs",
+        "test": "stacked resolve: first layer wins",
+        "pass": true
+      },
+      {
+        "suite": "refs",
+        "test": "stacked resolve: fallback to second layer",
+        "pass": true
+      },
+      {
+        "suite": "refs",
+        "test": "bucket: single reference layer",
+        "pass": true
+      },
+      {
+        "suite": "refs",
+        "test": "bucket: stacked shows all layers",
+        "pass": true
+      },
+      {
+        "suite": "refs",
+        "test": "bucket: local entry included",
+        "pass": false,
+        "error": "expected truthy, got false"
+      },
+      {
+        "suite": "refs",
+        "test": "layers: returns dirs, hidden, refs",
+        "pass": true
+      },
+      {
+        "suite": "refs",
+        "test": "mc.core/list includes reference entries",
+        "pass": true
+      },
+      {
+        "suite": "refs",
+        "test": "mc.core/list merges local and reference",
+        "pass": false,
+        "error": "should have local entry"
+      },
+      {
+        "suite": "refs",
+        "test": "copy-on-write: create in reference dir",
+        "pass": true
+      },
+      {
+        "suite": "refs",
+        "test": "copy-on-write: update reference file creates local",
+        "pass": true
+      },
+      {
+        "suite": "refs",
+        "test": "del rejects reference-only path",
+        "pass": true
+      },
+      {
+        "suite": "refs",
+        "test": "hidden: not resolvable by physical name",
+        "pass": true
+      },
+      {
+        "suite": "refs",
+        "test": "hidden: accessible through reference",
+        "pass": true
+      },
+      {
+        "suite": "refs",
+        "test": "hidden: excluded from list",
+        "pass": true
+      },
+      {
+        "suite": "refs",
+        "test": "hidden: write rejected (reference-only)",
+        "pass": true
+      },
+      {
+        "suite": "refs",
+        "test": "e2e: list docs shows referenced folders and files",
+        "pass": false,
+        "error": "mc.xpath: not found: /projects/15-cascading-references/docs"
+      },
+      {
+        "suite": "refs",
+        "test": "e2e: read file through docs reference",
+        "pass": false,
+        "error": "mc.xpath: not found: /projects/15-cascading-references/docs/PRINCIPLES.md"
+      },
+      {
+        "suite": "refs",
+        "test": "e2e: read nested through docs reference",
+        "pass": false,
+        "error": "mc.xpath: not found: /projects/15-cascading-references/docs/mycelium/patterns.md"
+      },
+      {
+        "suite": "refs",
+        "test": "e2e: list nested reference directory",
+        "pass": false,
+        "error": "mc.xpath: not found: /projects/15-cascading-references/docs/mycelium"
+      },
+      {
+        "suite": "refs",
+        "test": "e2e: flat list through docs references",
+        "pass": false,
+        "error": "mc.xpath: not found: /projects/15-cascading-references/docs"
+      },
+      {
+        "suite": "refs",
+        "test": "e2e: copy-on-write in docs",
+        "pass": false,
+        "error": "mc.xpath: not found: /projects/15-cascading-references/docs/PRINCIPLES.md"
+      },
+      {
+        "suite": "refs",
+        "test": "e2e: process folder referenced into project 16",
+        "pass": false,
+        "error": "mc.xpath: not found: /projects/16-process-standards"
+      },
+      {
+        "suite": "refs",
+        "test": "e2e: read process doc through reference",
+        "pass": false,
+        "error": "mc.xpath: not found: /projects/16-process-standards/process/build-cycle.md"
+      },
+      {
+        "suite": "refs",
+        "test": "teardown refs test fixtures",
+        "pass": true
+      }
+    ]
+  },
+  "completedAt": "2026-02-22T20:08:11.682Z"
+}
