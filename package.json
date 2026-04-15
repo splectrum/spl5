@@ -3,6 +3,9 @@
   "version": "0.1.0",
   "description": "Splectrum runtime — mycelium fabric prototype",
   "imports": {
+    "#avsc": "./lib/avsc/lib/index.js",
+    "#avsc/lib/*": "./lib/avsc/lib/*",
+    "#avsc-rpc": "./lib/avsc-rpc/services.js",
     "fs": { "bare": "bare-fs", "default": "fs" },
     "net": { "bare": "bare-net", "default": "net" },
     "path": { "bare": "bare-path", "default": "path" },
@@ -12,8 +15,6 @@
     "stream": { "bare": "bare-stream", "default": "stream" }
   },
   "dependencies": {
-    "avsc": "file:lib/avsc",
-    "avsc-rpc": "file:lib/avsc-rpc",
     "bare-fs": "github:holepunchto/bare-fs#v4.7.0",
     "bare-net": "github:holepunchto/bare-net#v2.3.1",
     "bare-path": "github:holepunchto/bare-path#v3.0.0",

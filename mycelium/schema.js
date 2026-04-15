@@ -1,4 +1,4 @@
-const avro = require('../lib/avsc')
+const avro = require('#avsc')
 
 // Kafka record shape — the single message format
 //
