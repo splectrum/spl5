@@ -1,0 +1,24 @@
+{
+  "name": "avsc-rpc",
+  "version": "0.1.0",
+  "description": "AVRO RPC protocol layer for Bare — extracted from avsc v5",
+  "main": "services.js",
+  "imports": {
+    "buffer": { "bare": "bare-buffer", "default": "buffer" },
+    "events": { "bare": "bare-events", "default": "events" },
+    "stream": { "bare": "bare-stream", "default": "stream" }
+  },
+  "peerDependencies": {
+    "avsc": ">=5.7.0"
+  },
+  "dependencies": {
+    "bare-buffer": "^3.6.0",
+    "bare-events": "^2.8.2",
+    "bare-stream": "^2.13.0"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bare-for-pear/avsc-rpc.git"
+  }
+}
