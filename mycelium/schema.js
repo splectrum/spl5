@@ -1,8 +1,4 @@
-if (typeof Bare !== 'undefined') require('bare-node-runtime/global')
-const avro = require('avsc', typeof Bare !== 'undefined'
-  ? { with: { imports: 'bare-node-runtime/imports' } }
-  : undefined
-)
+const avro = require('../lib/avsc')
 
 // Kafka record shape — the single message format
 //
@@ -14,7 +10,7 @@ const avro = require('avsc', typeof Bare !== 'undefined'
 // Value is the data payload. Opaque bytes. Starts empty,
 // fills during execution.
 //
-// Dispatch reads headers.record.logicalType — the single
+// Dispatch reads headers.record.schema — the single
 // routing key for every message.
 
 const Message = avro.Type.forSchema({

@@ -33,6 +33,10 @@
     "types/index.d.ts"
   ],
   "main": "./lib",
+  "imports": {
+    "fs": { "bare": "bare-fs", "default": "fs" },
+    "crypto": { "bare": "bare-crypto", "default": "crypto" }
+  },
   "types": "./types",
   "browser": {
     "./lib": "./etc/browser/avsc.js",

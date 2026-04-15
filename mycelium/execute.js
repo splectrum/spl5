@@ -1,6 +1,15 @@
 const fs = require('fs')
 const path = require('path')
 
+const decoder = new TextDecoder()
+
+// Decode Uint8Array or Buffer to string
+function str (val) {
+  if (typeof val === 'string') return val
+  if (val instanceof Uint8Array) return decoder.decode(val)
+  return '' + val
+}
+
 // Readable log entry — buffers as strings/parsed JSON
 function readable (msg) {
   return {
@@ -14,12 +23,12 @@ function readable (msg) {
       record: {
         schema: msg.headers.record.schema,
         args: msg.headers.record.args
-          ? JSON.parse(msg.headers.record.args.toString())
+          ? JSON.parse(str(msg.headers.record.args))
           : null
       },
       context: msg.headers.context.map(e => ({
         key: e.key,
-        value: e.value.toString()
+        value: str(e.value)
       }))
     }
   }

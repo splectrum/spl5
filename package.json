@@ -1,0 +1,25 @@
+{
+  "name": "spl",
+  "version": "0.1.0",
+  "description": "Splectrum runtime — mycelium fabric prototype",
+  "imports": {
+    "fs": { "bare": "bare-fs", "default": "fs" },
+    "net": { "bare": "bare-net", "default": "net" },
+    "path": { "bare": "bare-path", "default": "path" },
+    "crypto": { "bare": "bare-crypto", "default": "crypto" },
+    "buffer": { "bare": "bare-buffer", "default": "buffer" },
+    "events": { "bare": "bare-events", "default": "events" },
+    "stream": { "bare": "bare-stream", "default": "stream" }
+  },
+  "dependencies": {
+    "avsc": "file:lib/avsc",
+    "avsc-rpc": "file:lib/avsc-rpc",
+    "bare-fs": "github:holepunchto/bare-fs#v4.7.0",
+    "bare-net": "github:holepunchto/bare-net#v2.3.1",
+    "bare-path": "github:holepunchto/bare-path#v3.0.0",
+    "bare-crypto": "github:holepunchto/bare-crypto#v1.13.4",
+    "bare-buffer": "github:holepunchto/bare-buffer#v3.6.0",
+    "bare-events": "github:holepunchto/bare-events#v2.8.2",
+    "bare-stream": "github:holepunchto/bare-stream#v2.13.0"
+  }
+}
