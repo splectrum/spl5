@@ -234,14 +234,9 @@ compat.js     — Bare runtime shims: process.nextTick polyfill,
                 v5/v6 Buffer bridge, removed utils restoration
 ```
 
-## Upstream Documentation
+## Documentation
 
-The service/RPC API was documented in the avsc wiki before removal:
-
-- [Services](https://github.com/mtth/avsc/wiki/API#service) — API reference for Service, Client, Server, channels
-- [Advanced Usage](https://github.com/mtth/avsc/wiki/Advanced-usage) — middleware, custom transports
-
-Note: upstream docs reference Node.js streams. This fork uses streamx equivalents.
+- [API Reference](doc/api.md) — complete reference for Service, Client, Server, channels, middleware, wire protocol
 
 ## License
 
