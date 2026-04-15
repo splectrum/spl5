@@ -17,7 +17,10 @@ const server = service.createServer()
 
 // TCP transport
 net.createServer()
-  .on('connection', (con) => { server.createChannel(con) })
+  .on('connection', (con) => {
+    con.on('error', () => {}) // suppress connection close errors
+    server.createChannel(con)
+  })
   .listen(PORT, () => {
     console.log('spl server listening on port ' + PORT)
   })

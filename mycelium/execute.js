@@ -1,6 +1,7 @@
 const { Buffer, process } = require('./runtime.js')
 const fs = require('bare-fs')
 const path = require('bare-path')
+const { repoRoot } = require('./resolve.js')
 
 const decoder = new TextDecoder()
 
@@ -56,11 +57,30 @@ function logMessage (dir, msg) {
   return file
 }
 
+// Extract a context value by key
+function contextValue (envelope, name) {
+  let entry = envelope.headers.context.find(e => e.key === name)
+  return entry ? str(entry.value) : null
+}
+
 // The single operation: execute(envelope) → envelope
 // Dispatch reads headers.record.schema.
 function execute (envelope) {
   const logDir = path.join(process.cwd(), '_server', 'log')
   const logFile = logMessage(logDir, envelope)
+
+  // Resolve repo root from caller's point of view
+  let pov = contextValue(envelope, 'spl.pov')
+  let root = pov ? repoRoot(pov) : null
+
+  let ctx = [
+    ...envelope.headers.context,
+    { key: 'spl.status', value: Buffer.from('received') },
+    { key: 'spl.log', value: Buffer.from(logFile) }
+  ]
+  if (root) {
+    ctx.push({ key: 'spl.root', value: Buffer.from(root) })
+  }
 
   return {
     offset: 0,
@@ -72,11 +92,7 @@ function execute (envelope) {
         schema: envelope.headers.record.schema,
         args: envelope.headers.record.args
       },
-      context: [
-        ...envelope.headers.context,
-        { key: 'spl.status', value: Buffer.from('received') },
-        { key: 'spl.log', value: Buffer.from(logFile) }
-      ]
+      context: ctx
     }
   }
 }

@@ -16,8 +16,6 @@ spl5 restructured as the spl runtime codebase (2026-04-15).
 - `#avsc` and `#avsc-rpc` mapped in root package.json imports
 - All code uses Bare module names directly (bare-fs, bare-net, etc.)
 - Bare only — no Node dual-runtime
-- Bare only — Node dual-runtime dropped
 - In-memory pipeline works fully on Bare
-- TCP server starts on Bare, client connects and sends
-- TCP on Bare blocked by stream compat (bare-stream/streamx vs Node streams in avsc-rpc transport)
+- TCP RPC works fully on Bare (stream compat fixed 2026-04-15)
 - Top level: bin/, docs/, lib/, mycelium/. Prototyping artifacts in docs/archive/

@@ -9,9 +9,8 @@
 
 - [Active blog](project_blog_active.md) — public philosophical blog, publishing every 5 days
 - [Philosophy + engineering unified](project_philosophy_engineering_unified.md) — same project, same name, same principles
-- [Codebase restructured](project_codebase_restructure.md) — spl5 is now the spl runtime, subtrees, Bare-only
-
-- [Current priorities](project_priorities.md) — stream fix, simplify setup, native builds, rawuri, ref lib updates
+- [Codebase restructured](project_codebase_restructure.md) — spl5 is now the spl runtime, subtrees, Bare-only, TCP RPC working
+- [Current priorities](project_priorities.md) — simplify setup, entry points, native builds, rawuri, ref lib updates
 
 ## Reference
 
@@ -21,3 +20,4 @@
 
 - [Memory is transient](feedback_memory_is_transient.md) — auto-memory is between checkpoints only, not repo state
 - [Bare import resolution](feedback_bare_imports.md) — imports field scoping, direct module names, symlink for cross-resolution
+- [Stream compat](feedback_stream_compat.md) — transport classes use streamx.Transform directly, not bare-stream wrapper
