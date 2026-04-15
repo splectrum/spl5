@@ -15,6 +15,7 @@
 ## Reference
 
 - [Holepunch proposal](reference_holepunch_proposal.md) — Splectrum + Holepunch P2P architecture overlap
+- [in-wonder ref lib](reference_in_wonder.md) — ~/jules-tenbos/in-wonder, published at GitHub Pages
 
 ## Feedback
 
