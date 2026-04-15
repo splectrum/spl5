@@ -14,4 +14,4 @@ Priority list updated end of session 2026-04-15:
 6. **Step 3: rawuri implementation** — get/put/remove on filesystem through RPC chain.
 7. **avsc reference** — for the ref library.
 8. **Update CLAUDE.md** — reflect new codebase structure.
-9. **WoW + dependency docs to ref library** — currently in Windows Downloads.
+9. **Update WoW doc** — code-development-wow.md in Downloads is stale. Needs: Bare-only, bin/setup, symlink resolution, no #imports, native addon builds. Then submit to ref library.
