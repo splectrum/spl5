@@ -1,3 +1,4 @@
+const { Buffer, process } = require('./runtime.js')
 const { Message } = require('./schema.js')
 const { execute, nested } = require('./execute.js')
 

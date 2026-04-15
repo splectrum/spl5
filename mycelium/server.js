@@ -1,4 +1,4 @@
-const net = require('net')
+const net = require('bare-net')
 const { service } = require('./protocol.js')
 const { execute } = require('./execute.js')
 

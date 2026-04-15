@@ -1,4 +1,5 @@
-const net = require('net')
+const { Buffer, process } = require('./runtime.js')
+const net = require('bare-net')
 const { service } = require('./protocol.js')
 const { Message } = require('./schema.js')
 const { nested } = require('./execute.js')

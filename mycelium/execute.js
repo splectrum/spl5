@@ -1,5 +1,6 @@
-const fs = require('fs')
-const path = require('path')
+const { Buffer, process } = require('./runtime.js')
+const fs = require('bare-fs')
+const path = require('bare-path')
 
 const decoder = new TextDecoder()
 
