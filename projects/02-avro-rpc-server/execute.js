@@ -1,0 +1,74 @@
+const fs = require('fs')
+const path = require('path')
+
+// Readable log entry — buffers as strings/parsed JSON
+function readable (msg) {
+  return {
+    offset: msg.offset,
+    timestamp: msg.timestamp,
+    key: msg.key,
+    value: msg.value && msg.value.length > 0
+      ? { bytes: msg.value.length }
+      : null,
+    headers: {
+      record: {
+        schema: msg.headers.record.schema,
+        args: msg.headers.record.args
+          ? JSON.parse(msg.headers.record.args.toString())
+          : null
+      },
+      context: msg.headers.context.map(e => ({
+        key: e.key,
+        value: e.value.toString()
+      }))
+    }
+  }
+}
+
+// Nested display — decode value as inner operator
+function nested (msg, decode) {
+  const r = readable(msg)
+  if (msg.value && msg.value.length > 0 && decode) {
+    try { r.value = nested(decode(msg.value), decode) }
+    catch (e) { /* value is not a message */ }
+  }
+  return r
+}
+
+// Message log — append-only, timestamped files
+function logMessage (dir, msg) {
+  fs.mkdirSync(dir, { recursive: true })
+  const ts = msg.timestamp
+  let seq = 0
+  while (fs.existsSync(path.join(dir, `${ts}-${seq}.json`))) seq++
+  const file = path.join(dir, `${ts}-${seq}.json`)
+  fs.writeFileSync(file, JSON.stringify(readable(msg), null, 2))
+  return file
+}
+
+// The single operation: execute(envelope) → envelope
+// Dispatch reads headers.record.schema.
+function execute (envelope) {
+  const logDir = path.join(process.cwd(), '_server', 'log')
+  const logFile = logMessage(logDir, envelope)
+
+  return {
+    offset: 0,
+    timestamp: Date.now(),
+    key: envelope.key,
+    value: envelope.value,
+    headers: {
+      record: {
+        schema: envelope.headers.record.schema,
+        args: envelope.headers.record.args
+      },
+      context: [
+        ...envelope.headers.context,
+        { key: 'spl.status', value: Buffer.from('received') },
+        { key: 'spl.log', value: Buffer.from(logFile) }
+      ]
+    }
+  }
+}
+
+module.exports = { execute, readable, nested }

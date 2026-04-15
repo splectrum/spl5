@@ -386,6 +386,116 @@ CLI node variants, meaning languages, persona
 definitions. All repos, all namespaced, all equal
 standing (P4).
 
+## Execute Message Design
+
+### Self-Contained Computation in Kafka Wrapper
+
+The execute message is a self-contained computation
+record wrapped in the Kafka record shape. The same
+message goes in and comes back — enriched with the
+result.
+
+The Kafka wrapper (offset, timestamp, key, value,
+headers) is universal. The value field carries a
+typed computation record whose AVRO type name
+identifies the message type.
+
+### Message Structure
+
+```
+spl.mycelium.execute.Exec {           ← AVRO type = message identity
+  offset, timestamp,
+  key: "/blog/submissions",            ← current node
+  value: spl.mycelium.xpath.rawuri.get {  ← protocol operator
+    offset, timestamp,
+    key: ...,
+    value: <input or output>,          ← opaque bytes
+    headers: []
+  },
+  headers: [...]                       ← extensible metadata
+}
+```
+
+The outer wrapper is the execution protocol. The
+inner message is the protocol operator — also a
+Kafka record. Same shape at every level.
+
+### Request and Response
+
+Request: the inner operator's value carries input
+arguments. Output is absent.
+
+Response: the same message returns with the inner
+operator's value carrying the output. The outer
+wrapper, the operator type, and the key are
+unchanged.
+
+For get operations, output naturally extends input
+(keys → key-values). For transforms where input
+and output schemas differ, the operator's value
+schema defines both sides: { input, output }.
+
+### Design Properties
+
+- **Self-contained** — the value is the complete
+  computation record. In streaming, consumers
+  typically discard the Kafka wrapper and work with
+  the value only. The inner record carries
+  everything: operator, input, output, its own
+  timestamps and keys. It can travel, be stored, be
+  processed independently of the wrapper. The
+  wrapper itself is more than transport — headers
+  accumulate trace, debug, execution mode, timing.
+  The wrapper is historicity: the memory of how the
+  message has been handled. Strip the wrapper, the
+  computation is self-contained. Keep the wrapper,
+  you have the full journey.
+- **Same shape** — Kafka record at every nesting
+  level. Universal transport.
+- **Computation as data** — the logical type + input
+  is an unevaluated expression. After execution, it
+  is the resolved value. Same message, different
+  state.
+- **Enrichment not replacement** — the message
+  accumulates its result. Request context preserved.
+- **Works sync and async** — echo back pattern is
+  the same whether the response returns immediately
+  or via a queue.
+
+### Related Patterns
+
+- **Tuple Spaces (Linda)** — request template and
+  result share the same shape. Incomplete form
+  becomes completed form.
+- **Self-Contained Message** (Reactive Design
+  Patterns) — input and output context coexist in
+  one message.
+- **Content Enricher** (Enterprise Integration
+  Patterns) — message identity persists through
+  enrichment.
+- **Free Monads** — computation as data structure.
+  Before evaluation: expression. After: value.
+- **AVRO schema resolution** — response can have
+  additional fields and still be "readable as" the
+  same type. Enrichment built into the schema
+  mechanism.
+
+### Role of Headers
+
+Headers are for extensible metadata — trace, debug,
+execution mode, timing. Not for core message
+content. The execution intent (logical type, input,
+cwd) lives in the value, not in headers.
+
+### Role of the AVRO Type Name
+
+The AVRO record type name IS the message identity.
+`spl.mycelium.execute.Exec` tells the server what
+protocol this is. The inner type name
+(e.g. `spl.mycelium.xpath.rawuri.get`) tells the
+server which operator to resolve. No routing field
+needed — the schema is the contract.
+
 ## spl5 POC — Implementation Sequence
 
 Start from the server, work outward:
