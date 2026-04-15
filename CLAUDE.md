@@ -14,10 +14,8 @@ Philosophy drives engineering. The seed principles
 
 The public reference library at
 jules-tenbos.github.io/in-wonder/ is the living
-engineering documentation. It covers seed principles,
-language, reality, positioning, vocabulary, and
-detailed engineering specs. All repos contribute to
-it through submissions to the i-wonder repo.
+engineering documentation. Source: ~/jules-tenbos/in-wonder.
+One source of truth — don't keep copies elsewhere.
 
 ## Mission
 
@@ -45,20 +43,38 @@ Physical fully AI autonomous — structure, code,
 environments, testing, deployment. Logical interactive
 collaborative — scope, meaning, design, direction.
 
-## Current Work
+## Codebase Structure
 
-Project 01 (engineering-foundation) contains:
-- Seed spec notes (P1-P5 engineering analysis)
-- Mycelium design docs (fabric, process/CLI, namespace)
-- Implementation notes and POC sequence
-- State of art positioning research
-- Working procedure for persona-driven documentation
+```
+bin/          — entry point scripts (spl, spl-server, setup)
+docs/         — policy (DEPENDENCIES.md), schema (MESSAGE.md)
+lib/          — all dependencies
+  avsc/       — AVRO types/serialization (constitutive, subtree)
+  avsc-rpc/   — AVRO RPC protocol (constitutive, subtree)
+  bare-*/     — platform deps (gitignored, populated by bin/setup)
+mycelium/     — runtime code (fabric namespace)
+```
+
+- **Bare only** — no Node.js, no dual-runtime
+- **node_modules → lib/** symlink for all module resolution
+- **bin/spl** — global CLI, symlinked to ~/.local/bin
+- **bin/spl-server** — RPC server, system service
+- **bin/setup** — populates platform deps from npm (prebuilds only)
+
+## What Works
+
+- AVRO message schema (Kafka record shape, the onion)
+- AVRO RPC protocol over TCP on Bare
+- Global CLI: `spl <schema> [key] [args...]` from anywhere
+- Server resolves repo root from caller's cwd (ancestor axis)
+- In-memory pipeline (test-client.js)
 
 ## POC Sequence
 
-1. AVRO RPC server with spl.cli.execute message
-2. CLI submitting to server
+1. ~~AVRO RPC server with spl.cli.execute message~~ ✓
+2. ~~CLI submitting to server~~ ✓
 3. rawuri (get/put/remove) through the RPC chain
+   — needs headers/dispatch design discussion first
 4. Register rawuri on repo root node
 5. Protocol resolution in cli.execute
 6. Expand: datauri, metadatauri, learn from prototype
@@ -73,3 +89,7 @@ Project 01 (engineering-foundation) contains:
 - AVRO "readable as" — no strict signatures
 - Single identifier system across all dimensions
 - Node self-containment for lift-and-shift portability
+- Transport classes use streamx.Transform directly
+  (not bare-stream wrapper — object-mode compat)
+- Constitutive deps as git subtrees in lib/
+- Platform deps gitignored, populated by bin/setup
