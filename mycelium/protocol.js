@@ -1,4 +1,4 @@
-const { Service } = require('#avsc-rpc')
+const { Service } = require('avsc-rpc')
 const { Message } = require('./schema.js')
 
 // Single RPC protocol: execute(Message) → Message

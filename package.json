@@ -1,9 +1,5 @@
 {
   "name": "spl",
   "version": "0.1.0",
-  "description": "Splectrum runtime — mycelium fabric prototype",
-  "imports": {
-    "#avsc": "./lib/avsc/lib/index.js",
-    "#avsc-rpc": "./lib/avsc-rpc/services.js"
-  }
+  "description": "Splectrum runtime — mycelium fabric prototype"
 }
