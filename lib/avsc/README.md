@@ -140,16 +140,17 @@ lib/
   files.js        — filesystem hooks for IDL import resolution
 ```
 
-## Upstream Documentation
+## Documentation
 
-The avsc API is fully documented in the upstream wiki:
+Full reference published at [bare-for-pear.github.io/avsc](https://bare-for-pear.github.io/avsc/):
 
-- [API Reference](https://github.com/mtth/avsc/wiki/API)
-- [Quickstart](https://github.com/mtth/avsc/wiki/Quickstart)
-- [Advanced Usage](https://github.com/mtth/avsc/wiki/Advanced-usage) — logical types, schema evolution, type inference, custom longs
-- [Benchmarks](https://github.com/mtth/avsc/wiki/Benchmarks)
+- [Type System](https://bare-for-pear.github.io/avsc/types) — primitives, complex types, logical types, schema evolution
+- [Serialization](https://bare-for-pear.github.io/avsc/serialization) — binary encoding, the Tap, fingerprints
+- [Container Files](https://bare-for-pear.github.io/avsc/containers) — block streams, file headers, codecs
+- [Schema Parsing](https://bare-for-pear.github.io/avsc/schemas) — JSON schemas, Avro IDL, namespaces
+- [Barification](https://bare-for-pear.github.io/avsc/barification) — what changed from upstream
 
-All upstream API documentation applies to this fork. The only difference is the runtime environment.
+The upstream [avsc wiki](https://github.com/mtth/avsc/wiki) remains the authoritative API reference for the type system. All upstream documentation applies — the only difference is the runtime.
 
 ## License
 

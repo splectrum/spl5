@@ -236,7 +236,13 @@ compat.js     — Bare runtime shims: process.nextTick polyfill,
 
 ## Documentation
 
-- [API Reference](doc/api.md) — complete reference for Service, Client, Server, channels, middleware, wire protocol
+Full reference published at [bare-for-pear.github.io/avsc-rpc](https://bare-for-pear.github.io/avsc-rpc/):
+
+- [API Reference](https://bare-for-pear.github.io/avsc-rpc/api) — Service, Client, Server, channels, middleware, wire protocol
+- [Transports](https://bare-for-pear.github.io/avsc-rpc/transports) — in-memory, TCP, HTTP
+- [Middleware](https://bare-for-pear.github.io/avsc-rpc/middleware) — request/response chain
+- [Wire Protocol](https://bare-for-pear.github.io/avsc-rpc/wire-protocol) — handshake, framing, Netty compatibility
+- [Barification](https://bare-for-pear.github.io/avsc-rpc/barification) — what changed from upstream
 
 ## License
 

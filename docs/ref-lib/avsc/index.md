@@ -74,17 +74,24 @@ applies.
 
 ## Reference Pages
 
-- [Type System](types.md) — schema definition,
+- [Type System](types) — schema definition,
   primitives, complex types, logical types, type
   inference, schema evolution
-- [Serialization](serialization.md) — encoding,
+- [Serialization](serialization) — encoding,
   decoding, the Tap buffer, schema fingerprints
-- [Container Files](containers.md) — block
+- [Container Files](containers) — block
   encoding/decoding streams, file headers, codecs
-- [Schema Parsing](schemas.md) — JSON schemas,
+- [Schema Parsing](schemas) — JSON schemas,
   IDL protocols, import resolution
-- [Barification](barification.md) — what was changed
+- [Barification](barification) — what was changed
   from upstream, platform dependencies, polyfills
+
+## Library Reference
+
+The library's own reference site:
+[bare-for-pear.github.io/avsc](https://bare-for-pear.github.io/avsc/)
+— plain API documentation without the architectural
+context.
 
 ---
 
