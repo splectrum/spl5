@@ -6,7 +6,8 @@ const {
   OperatorBag,
   ExecuteContext,
   streamHeader,
-  typedRef
+  typedRef,
+  encodedHeader
 } = require('../../mycelium/schema.js')
 const { repoRoot } = require('../../mycelium/resolve.js')
 const { nested } = require('../display.js')
@@ -50,19 +51,24 @@ const innerOp = {
 }
 
 // Wrap in execution context — the onion
+const innerBytes = StreamRecord.toBuffer(innerOp)
+
 const exec = {
   offset: 0,
   timestamp: Date.now(),
   key: key,
-  value: StreamRecord.toBuffer(innerOp),
+  value: innerBytes,
   headers: [
+    // Base descriptor — dispatch info
     streamHeader('spl.mycelium.process.execute',
-      typedRef('spl.data.mycelium.process.execute', ExecuteContext, {
-        args: null, value: null, mode: 'sync',
-        root: { repo, local }
-      }),
-      { type: 'spl.data.stream.record', value: StreamRecord.toBuffer(innerOp) }
-    )
+      null,
+      { type: 'spl.data.stream.record', value: innerBytes }
+    ),
+    // Type-specific — execution context properties
+    encodedHeader('spl.mycelium.process.execute', ExecuteContext, {
+      args: null, value: null, mode: 'sync',
+      root: { repo, local }
+    })
   ]
 }
 

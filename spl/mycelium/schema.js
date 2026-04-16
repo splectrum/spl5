@@ -130,7 +130,12 @@ function typedRef (schemaName, type, data) {
   return { type: schemaName, value: type.toBuffer(data) }
 }
 
-// Context header — encoded bytes
+// Type-specific header — encoded with its schema
+function encodedHeader (key, type, data) {
+  return { key, value: type.toBuffer(data) }
+}
+
+// Context header — raw bytes
 function contextHeader (key, value) {
   return { key, value: Buffer.from(value) }
 }
@@ -159,6 +164,7 @@ module.exports = {
   ExecuteContext,
   streamHeader,
   typedRef,
+  encodedHeader,
   contextHeader,
   getStreamDescriptor,
   findHeader,

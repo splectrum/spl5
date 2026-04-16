@@ -4,7 +4,8 @@ const {
   OperatorBag,
   ExecuteContext,
   streamHeader,
-  typedRef
+  typedRef,
+  encodedHeader
 } = require('./schema.js')
 const { repoRoot } = require('./resolve.js')
 const { dispatch } = require('./process/dispatch')
@@ -39,12 +40,13 @@ const exec = {
   value: innerBytes,
   headers: [
     streamHeader('spl.mycelium.process.execute',
-      typedRef('spl.data.mycelium.process.execute', ExecuteContext, {
-        args: null, value: null, mode: 'sync',
-        root: { repo, local }
-      }),
+      null,
       { type: 'spl.data.stream.record', value: innerBytes }
-    )
+    ),
+    encodedHeader('spl.mycelium.process.execute', ExecuteContext, {
+      args: null, value: null, mode: 'sync',
+      root: { repo, local }
+    })
   ]
 }
 
