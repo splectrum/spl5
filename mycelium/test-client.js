@@ -7,15 +7,9 @@ const {
   typedRef,
   contextHeader
 } = require('./schema.js')
-const { dispatch, register } = require('./process/dispatch')
+require('./')
+const { dispatch } = require('./process/dispatch')
 const { nested } = require('../avsc-rpc/display.js')
-
-// Register handlers
-register('spl.mycelium.process.execute', require('./process/execute'))
-const rawuri = require('./xpath/raw/uri')
-register('spl.mycelium.xpath.raw.uri.get', rawuri.get)
-register('spl.mycelium.xpath.raw.uri.put', rawuri.put)
-register('spl.mycelium.xpath.raw.uri.remove', rawuri.remove)
 
 // Inner operator: spl.mycelium.xpath.raw.uri.get
 const innerOp = {

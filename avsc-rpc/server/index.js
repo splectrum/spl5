@@ -6,17 +6,8 @@ const { repoRoot } = require('../../mycelium/resolve.js')
 const { contextHeader, findHeader } = require('../../mycelium/schema.js')
 const { service } = require('../protocol.js')
 const { readable } = require('../display.js')
-const { dispatch, register } = require('../../mycelium/process/dispatch')
-
-// --- Register Stream Type Handlers ---
-
-register('spl.mycelium.process.execute',
-  require('../../mycelium/process/execute'))
-
-const rawuri = require('../../mycelium/xpath/raw/uri')
-register('spl.mycelium.xpath.raw.uri.get', rawuri.get)
-register('spl.mycelium.xpath.raw.uri.put', rawuri.put)
-register('spl.mycelium.xpath.raw.uri.remove', rawuri.remove)
+require('../../mycelium')
+const { dispatch } = require('../../mycelium/process/dispatch')
 
 // --- Logging ---
 
