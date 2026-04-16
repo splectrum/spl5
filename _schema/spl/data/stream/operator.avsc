@@ -1,0 +1,8 @@
+{
+  "type": "record",
+  "name": "operator",
+  "namespace": "spl.data.stream",
+  "fields": [
+    { "name": "args", "type": ["null", "bytes"], "default": null }
+  ]
+}

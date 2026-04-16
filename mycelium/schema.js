@@ -1,92 +1,94 @@
 const avro = require('avsc')
+const fs = require('bare-fs')
+const path = require('bare-path')
+const { repoRoot } = require('./resolve.js')
 
-// --- The Common Record Schema ---
+// --- Schema Loader ---
 //
-// spl.data.stream.record — the Kafka record shape.
-// Every stream record has this schema. Declared once
-// to the RPC protocol. Headers is an open key-value
-// list — each entry identified by namespace key,
-// data encoded per that key's schema.
+// Loads .avsc files from the _schema tree by namespace
+// path. The _schema directory on the repo root is the
+// local schema registry. Reality is local.
+//
+// Namespace path → filesystem path:
+//   spl.data.stream.record → _schema/spl/data/stream/record.avsc
+//
+// Aliases: an .avsc file with { "alias": "spl.data.stream.operator" }
+// resolves to the aliased schema. The alias is a fact in the filesystem.
 
-const StreamRecord = avro.Type.forSchema({
-  type: 'record',
-  name: 'record',
-  namespace: 'spl.data.stream',
-  fields: [
-    { name: 'offset', type: 'long', default: 0 },
-    { name: 'timestamp', type: 'long' },
-    { name: 'key', type: 'string' },
-    { name: 'value', type: 'bytes', default: '' },
-    {
-      name: 'headers',
-      type: {
-        type: 'array',
-        items: {
-          type: 'record',
-          name: 'header',
-          namespace: 'spl.data.stream',
-          fields: [
-            { name: 'key', type: 'string' },
-            { name: 'value', type: 'bytes' }
-          ]
-        }
-      },
-      default: []
+const cache = {}
+let schemaRoot = null
+
+function getSchemaRoot () {
+  if (schemaRoot) return schemaRoot
+  let root = repoRoot(typeof Bare !== 'undefined'
+    ? require('bare-os').cwd()
+    : process.cwd())
+  schemaRoot = root ? path.join(root, '_schema') : null
+  return schemaRoot
+}
+
+// Load a schema by fully qualified name
+function loadSchema (name) {
+  if (cache[name]) return cache[name]
+
+  let root = getSchemaRoot()
+  if (!root) throw new Error('no _schema directory found')
+
+  let parts = name.split('.')
+  let file = path.join(root, ...parts) + '.avsc'
+
+  if (!fs.existsSync(file)) {
+    throw new Error('schema not found: ' + name + ' (' + file + ')')
+  }
+
+  let text = fs.readFileSync(file, 'utf-8')
+  let def = JSON.parse(text)
+
+  // Resolve alias
+  if (def.alias) {
+    let resolved = loadSchema(def.alias)
+    cache[name] = resolved
+    return resolved
+  }
+
+  let type = avro.Type.forSchema(def)
+  cache[name] = type
+  return type
+}
+
+// List all schema names under a namespace prefix
+function listSchemas (prefix) {
+  let root = getSchemaRoot()
+  if (!root) return []
+
+  let parts = prefix.split('.')
+  let dir = path.join(root, ...parts)
+
+  if (!fs.existsSync(dir)) return []
+
+  let names = []
+  let entries = fs.readdirSync(dir)
+  for (let entry of entries) {
+    let full = path.join(dir, entry)
+    let stat = fs.statSync(full)
+    if (stat.isFile() && entry.endsWith('.avsc')) {
+      names.push(prefix + '.' + entry.slice(0, -5))
+    } else if (stat.isDirectory()) {
+      // Recurse into subdirectories
+      names.push(...listSchemas(prefix + '.' + entry))
     }
-  ]
-})
+  }
+  return names
+}
 
-// --- Stream Descriptor Schema ---
-//
-// spl.data.stream — the base header descriptor.
-// Always present in headers. The minimum to get
-// record handling started: the stream type.
+// --- Convenience: load the core schemas ---
 
-const StreamDescriptor = avro.Type.forSchema({
-  type: 'record',
-  name: 'descriptor',
-  namespace: 'spl.data.stream',
-  fields: [
-    { name: 'type', type: 'string' }
-  ]
-})
-
-// --- Stream Type Schemas ---
-//
-// Each stream type has a property bag schema.
-// The stream type name is the key in headers.
-// The schema defines the property bag structure.
-// Multiple stream type names can alias to the
-// same schema.
-
-// spl.mycelium.process.execute — execution context.
-// Wraps an operation. Value contains the inner
-// stream record.
-const ExecuteContext = avro.Type.forSchema({
-  type: 'record',
-  name: 'execute',
-  namespace: 'spl.mycelium.process',
-  fields: [
-    { name: 'mode', type: 'string', default: 'sync' }
-  ]
-})
-
-// Base operator schema — the method signature pattern.
-// args in, value out. Used by operator stream types.
-// Multiple operator type names alias to this schema.
-const OperatorBag = avro.Type.forSchema({
-  type: 'record',
-  name: 'operator',
-  namespace: 'spl.data.stream',
-  fields: [
-    { name: 'args', type: ['null', 'bytes'], default: null }
-  ]
-})
+const StreamRecord = loadSchema('spl.data.stream.record')
+const StreamDescriptor = loadSchema('spl.data.stream.descriptor')
+const ExecuteContext = loadSchema('spl.mycelium.process.execute')
+const OperatorBag = loadSchema('spl.data.stream.operator')
 
 // --- Header Helpers ---
-//
-// Encode a (key, typed value) into a header entry.
-// Decode a header entry given the schema for its key.
 
 function encodeHeader (key, type, value) {
   return { key, value: type.toBuffer(value) }
@@ -96,17 +98,17 @@ function decodeHeader (entry, type) {
   return type.fromBuffer(entry.value)
 }
 
-// Find a header entry by key
 function findHeader (headers, key) {
   return headers.find(h => h.key === key)
 }
 
-// List all header keys
 function headerKeys (headers) {
   return headers.map(h => h.key)
 }
 
 module.exports = {
+  loadSchema,
+  listSchemas,
   StreamRecord,
   StreamDescriptor,
   ExecuteContext,

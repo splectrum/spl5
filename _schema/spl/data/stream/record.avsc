@@ -1,0 +1,27 @@
+{
+  "type": "record",
+  "name": "record",
+  "namespace": "spl.data.stream",
+  "fields": [
+    { "name": "offset", "type": "long", "default": 0 },
+    { "name": "timestamp", "type": "long" },
+    { "name": "key", "type": "string" },
+    { "name": "value", "type": "bytes", "default": "" },
+    {
+      "name": "headers",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "header",
+          "namespace": "spl.data.stream",
+          "fields": [
+            { "name": "key", "type": "string" },
+            { "name": "value", "type": "bytes" }
+          ]
+        }
+      },
+      "default": []
+    }
+  ]
+}
