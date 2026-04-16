@@ -1,44 +1,53 @@
 const { Buffer, process } = require('./runtime.js')
-const { Message } = require('./schema.js')
+const {
+  StreamRecord,
+  StreamDescriptor,
+  ExecuteContext,
+  OperatorBag,
+  encodeHeader
+} = require('./schema.js')
 const { execute, nested } = require('./execute.js')
 
-// Inner operator: xpath.data.uri.get
+// Inner operator: spl.mycelium.xpath.raw.uri.get
 const innerOp = {
+  offset: 0,
   timestamp: Date.now(),
   key: '/blog/submissions',
-  headers: {
-    record: {
-      schema: 'spl.mycelium.xpath.data.uri.get',
+  value: Buffer.alloc(0),
+  headers: [
+    encodeHeader('spl.data.stream', StreamDescriptor, {
+      type: 'spl.mycelium.xpath.raw.uri.get'
+    }),
+    encodeHeader('spl.mycelium.xpath.raw.uri.get', OperatorBag, {
       args: Buffer.from(JSON.stringify([[{ key: '/blog/submissions' }]]))
-    }
-  }
+    })
+  ]
 }
 
 // Serialize inner operator — the onion
-const innerBytes = Message.toBuffer(innerOp)
+const innerBytes = StreamRecord.toBuffer(innerOp)
 
-// Exec envelope wrapping the inner operator
+// Execution context wrapping the inner operator
 const exec = {
+  offset: 0,
   timestamp: Date.now(),
   key: '/blog/submissions',
   value: innerBytes,
-  headers: {
-    record: {
-      schema: 'spl.mycelium.process.execute.exec',
-      args: Buffer.from(JSON.stringify({ mode: 'sync' }))
-    },
-    context: [
-      { key: 'spl.pov', value: Buffer.from(process.cwd()) }
-    ]
-  }
+  headers: [
+    encodeHeader('spl.data.stream', StreamDescriptor, {
+      type: 'spl.mycelium.process.execute'
+    }),
+    encodeHeader('spl.mycelium.process.execute', ExecuteContext, {
+      mode: 'sync'
+    }),
+    { key: 'spl.pov', value: Buffer.from(process.cwd()) }
+  ]
 }
 
-const decode = (buf) => Message.fromBuffer(buf)
-
 console.log('--- REQUEST ---')
-console.log(JSON.stringify(nested(exec, decode), null, 2))
+console.log(JSON.stringify(nested(exec), null, 2))
 
 const response = execute(exec)
 
 console.log('\n--- RESPONSE ---')
-console.log(JSON.stringify(nested(response, decode), null, 2))
+console.log(JSON.stringify(nested(response), null, 2))

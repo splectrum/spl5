@@ -1,22 +1,17 @@
 const avro = require('avsc')
 
-// Kafka record shape — the single message format
+// --- The Common Record Schema ---
 //
-// Headers is a property bag with AVRO schema assigning
-// namespace. Contains:
-//   record — operator identification (logicalType + args)
-//   context — extensible execution metadata
-//
-// Value is the data payload. Opaque bytes. Starts empty,
-// fills during execution.
-//
-// Dispatch reads headers.record.schema — the single
-// routing key for every message.
+// spl.data.stream.record — the Kafka record shape.
+// Every stream record has this schema. Declared once
+// to the RPC protocol. Headers is an open key-value
+// list — each entry identified by namespace key,
+// data encoded per that key's schema.
 
-const Message = avro.Type.forSchema({
+const StreamRecord = avro.Type.forSchema({
   type: 'record',
-  name: 'Message',
-  namespace: 'spl.mycelium',
+  name: 'record',
+  namespace: 'spl.data.stream',
   fields: [
     { name: 'offset', type: 'long', default: 0 },
     { name: 'timestamp', type: 'long' },
@@ -25,42 +20,99 @@ const Message = avro.Type.forSchema({
     {
       name: 'headers',
       type: {
-        type: 'record',
-        name: 'Headers',
-        namespace: 'spl.mycelium.message',
-        fields: [
-          {
-            name: 'record',
-            type: {
-              type: 'record',
-              name: 'Record',
-              namespace: 'spl.mycelium.operator',
-              fields: [
-                { name: 'schema', type: 'string' },
-                { name: 'args', type: ['null', 'bytes'], default: null }
-              ]
-            }
-          },
-          {
-            name: 'context',
-            type: {
-              type: 'array',
-              items: {
-                type: 'record',
-                name: 'ContextEntry',
-                namespace: 'spl.mycelium.message',
-                fields: [
-                  { name: 'key', type: 'string' },
-                  { name: 'value', type: 'bytes' }
-                ]
-              }
-            },
-            default: []
-          }
-        ]
-      }
+        type: 'array',
+        items: {
+          type: 'record',
+          name: 'header',
+          namespace: 'spl.data.stream',
+          fields: [
+            { name: 'key', type: 'string' },
+            { name: 'value', type: 'bytes' }
+          ]
+        }
+      },
+      default: []
     }
   ]
 })
 
-module.exports = { Message }
+// --- Stream Descriptor Schema ---
+//
+// spl.data.stream — the base header descriptor.
+// Always present in headers. The minimum to get
+// record handling started: the stream type.
+
+const StreamDescriptor = avro.Type.forSchema({
+  type: 'record',
+  name: 'descriptor',
+  namespace: 'spl.data.stream',
+  fields: [
+    { name: 'type', type: 'string' }
+  ]
+})
+
+// --- Stream Type Schemas ---
+//
+// Each stream type has a property bag schema.
+// The stream type name is the key in headers.
+// The schema defines the property bag structure.
+// Multiple stream type names can alias to the
+// same schema.
+
+// spl.mycelium.process.execute — execution context.
+// Wraps an operation. Value contains the inner
+// stream record.
+const ExecuteContext = avro.Type.forSchema({
+  type: 'record',
+  name: 'execute',
+  namespace: 'spl.mycelium.process',
+  fields: [
+    { name: 'mode', type: 'string', default: 'sync' }
+  ]
+})
+
+// Base operator schema — the method signature pattern.
+// args in, value out. Used by operator stream types.
+// Multiple operator type names alias to this schema.
+const OperatorBag = avro.Type.forSchema({
+  type: 'record',
+  name: 'operator',
+  namespace: 'spl.data.stream',
+  fields: [
+    { name: 'args', type: ['null', 'bytes'], default: null }
+  ]
+})
+
+// --- Header Helpers ---
+//
+// Encode a (key, typed value) into a header entry.
+// Decode a header entry given the schema for its key.
+
+function encodeHeader (key, type, value) {
+  return { key, value: type.toBuffer(value) }
+}
+
+function decodeHeader (entry, type) {
+  return type.fromBuffer(entry.value)
+}
+
+// Find a header entry by key
+function findHeader (headers, key) {
+  return headers.find(h => h.key === key)
+}
+
+// List all header keys
+function headerKeys (headers) {
+  return headers.map(h => h.key)
+}
+
+module.exports = {
+  StreamRecord,
+  StreamDescriptor,
+  ExecuteContext,
+  OperatorBag,
+  encodeHeader,
+  decodeHeader,
+  findHeader,
+  headerKeys
+}

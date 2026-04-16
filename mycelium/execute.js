@@ -2,17 +2,65 @@ const { Buffer, process } = require('./runtime.js')
 const fs = require('bare-fs')
 const path = require('bare-path')
 const { repoRoot } = require('./resolve.js')
+const {
+  StreamRecord,
+  StreamDescriptor,
+  ExecuteContext,
+  OperatorBag,
+  encodeHeader,
+  decodeHeader,
+  findHeader,
+  headerKeys
+} = require('./schema.js')
 
 const decoder = new TextDecoder()
 
-// Decode Uint8Array or Buffer to string
 function str (val) {
   if (typeof val === 'string') return val
   if (val instanceof Uint8Array) return decoder.decode(val)
   return '' + val
 }
 
-// Readable log entry — buffers as strings/parsed JSON
+// --- Readable Display ---
+//
+// Decode a stream record into a human-readable object.
+// Decodes known header types. Unknown headers show as
+// { bytes: N }.
+
+const KNOWN_TYPES = {
+  'spl.data.stream': StreamDescriptor,
+  'spl.mycelium.process.execute': ExecuteContext
+}
+
+// Make decoded values readable — bytes as strings,
+// parse JSON where possible
+function readableValue (val) {
+  if (val === null || val === undefined) return null
+  if (val instanceof Uint8Array || Buffer.isBuffer(val)) {
+    let s = str(val)
+    try { return JSON.parse(s) } catch (e) { return s }
+  }
+  if (typeof val === 'object') {
+    let out = {}
+    for (let k of Object.keys(val)) out[k] = readableValue(val[k])
+    return out
+  }
+  return val
+}
+
+function readableHeader (entry) {
+  let type = KNOWN_TYPES[entry.key]
+  if (type) {
+    try { return { key: entry.key, value: readableValue(decodeHeader(entry, type)) } }
+    catch (e) { /* fall through */ }
+  }
+  // Operator bags
+  try { return { key: entry.key, value: readableValue(decodeHeader(entry, OperatorBag)) } }
+  catch (e) { /* fall through */ }
+  // Raw bytes — try as string
+  return { key: entry.key, value: str(entry.value) }
+}
+
 function readable (msg) {
   return {
     offset: msg.offset,
@@ -21,65 +69,64 @@ function readable (msg) {
     value: msg.value && msg.value.length > 0
       ? { bytes: msg.value.length }
       : null,
-    headers: {
-      record: {
-        schema: msg.headers.record.schema,
-        args: msg.headers.record.args
-          ? JSON.parse(str(msg.headers.record.args))
-          : null
-      },
-      context: msg.headers.context.map(e => ({
-        key: e.key,
-        value: str(e.value)
-      }))
-    }
+    headers: msg.headers.map(readableHeader)
   }
 }
 
-// Nested display — decode value as inner operator
-function nested (msg, decode) {
-  const r = readable(msg)
-  if (msg.value && msg.value.length > 0 && decode) {
-    try { r.value = nested(decode(msg.value), decode) }
-    catch (e) { /* value is not a message */ }
+// Nested display — decode value as inner stream record
+function nested (msg) {
+  let r = readable(msg)
+  if (msg.value && msg.value.length > 0) {
+    try { r.value = nested(StreamRecord.fromBuffer(msg.value)) }
+    catch (e) { /* value is not a stream record */ }
   }
   return r
 }
 
-// Message log — append-only, timestamped files
+// --- Message Log ---
+
 function logMessage (dir, msg) {
   fs.mkdirSync(dir, { recursive: true })
-  const ts = msg.timestamp
+  let ts = msg.timestamp
   let seq = 0
   while (fs.existsSync(path.join(dir, `${ts}-${seq}.json`))) seq++
-  const file = path.join(dir, `${ts}-${seq}.json`)
+  let file = path.join(dir, `${ts}-${seq}.json`)
   fs.writeFileSync(file, JSON.stringify(readable(msg), null, 2))
   return file
 }
 
-// Extract a context value by key
-function contextValue (envelope, name) {
-  let entry = envelope.headers.context.find(e => e.key === name)
-  return entry ? str(entry.value) : null
-}
+// --- Execute ---
+//
+// 1. Read spl.data.stream descriptor → stream type
+// 2. Log the message
+// 3. Resolve repo root from caller pov
+// 4. Return enriched record
 
-// The single operation: execute(envelope) → envelope
-// Dispatch reads headers.record.schema.
 function execute (envelope) {
-  const logDir = path.join(process.cwd(), '_server', 'log')
-  const logFile = logMessage(logDir, envelope)
+  let logDir = path.join(process.cwd(), '_server', 'log')
+  let logFile = logMessage(logDir, envelope)
 
-  // Resolve repo root from caller's point of view
-  let pov = contextValue(envelope, 'spl.pov')
+  // Read stream descriptor
+  let streamEntry = findHeader(envelope.headers, 'spl.data.stream')
+  let streamDesc = streamEntry
+    ? decodeHeader(streamEntry, StreamDescriptor)
+    : { type: 'unknown' }
+
+  // Find caller's point of view
+  let povEntry = findHeader(envelope.headers, 'spl.pov')
+  let pov = povEntry ? str(povEntry.value) : null
   let root = pov ? repoRoot(pov) : null
 
-  let ctx = [
-    ...envelope.headers.context,
+  // Build response headers: original + status context
+  let responseHeaders = [
+    ...envelope.headers,
     { key: 'spl.status', value: Buffer.from('received') },
     { key: 'spl.log', value: Buffer.from(logFile) }
   ]
   if (root) {
-    ctx.push({ key: 'spl.root', value: Buffer.from(root) })
+    responseHeaders.push(
+      { key: 'spl.root', value: Buffer.from(root) }
+    )
   }
 
   return {
@@ -87,13 +134,7 @@ function execute (envelope) {
     timestamp: Date.now(),
     key: envelope.key,
     value: envelope.value,
-    headers: {
-      record: {
-        schema: envelope.headers.record.schema,
-        args: envelope.headers.record.args
-      },
-      context: ctx
-    }
+    headers: responseHeaders
   }
 }
 

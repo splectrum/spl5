@@ -1,111 +1,124 @@
-# Message Schema — Working Reference
+# Stream Record Schema — Working Reference
 
 Current AVRO schema used by the spl5 prototype.
-This is the working format — subject to formal
-AVRO schema review when prototyping is complete.
+Subject to formal review when prototyping is complete.
 
 ---
 
-## Kafka Record Shape
+## Common Record: spl.data.stream.record
 
-Every message is a Kafka record. Same shape at
-every nesting level (the onion).
+Every stream record has this shape. Declared once
+to the RPC protocol.
 
 ```
-spl.mycelium.Message {
+spl.data.stream.record {
   offset:    long     (default 0)
   timestamp: long
   key:       string
   value:     bytes    (default empty)
-  headers:   Headers
-}
-```
-
-## Headers — Property Bag
-
-Headers is a property bag with two concerns:
-
-```
-spl.mycelium.message.Headers {
-  record:  Record           — the what (operator/schema identification)
-  context: [ContextEntry]   — the how (execution metadata, extensible)
-}
-```
-
-## Record — Schema Identification
-
-Identifies what this message represents and carries
-its arguments. `schema` is the working name — it
-could identify an operator, a data type, or
-something else. To be resolved in formal review.
-
-```
-spl.mycelium.operator.Record {
-  schema: string       — dispatch key
-  args:   null | bytes — operator arguments (default null)
-}
-```
-
-## Context Entry
-
-Extensible key-value metadata. Accumulates through
-the processing pipeline.
-
-```
-spl.mycelium.message.ContextEntry {
-  key:   string
-  value: bytes
-}
-```
-
-## The Onion — Nested Messages
-
-The exec envelope wraps the inner operator. The
-inner operator is serialized to bytes in the exec's
-value field. Same Message schema at both layers.
-
-```
-process.execute.exec {
-  headers: {
-    record: {
-      schema: "spl.mycelium.process.execute.exec",
-      args: { mode: "sync" }
-    }
-  },
-  key: "/blog/submissions",
-  value: xpath.data.uri.get {
-    headers: {
-      record: {
-        schema: "spl.mycelium.xpath.data.uri.get",
-        args: [[{ key: "/blog/submissions" }]]
-      }
-    },
-    key: "/blog/submissions",
-    value: <output — empty until executed>
+  headers:   array of spl.data.stream.header {
+    key:   string
+    value: bytes
   }
 }
 ```
 
-## Processing Pipeline
+Headers is an open key-value list. Each entry is a
+namespace key (string) and AVRO-encoded data (bytes).
+The key names the schema used to encode the value.
+
+## Stream Descriptor: spl.data.stream
+
+Always present in headers. The record's
+self-description — minimum required to start handling.
 
 ```
-arrive   → headers: args          value: empty
-validate → headers: args          value: validated input
-execute  → headers: args          value: output
-error    → headers: args + error  value: partial/empty
+spl.data.stream.descriptor {
+  type: string    — the stream type
+}
 ```
 
-## Request and Response
+## Stream Types
 
-Response returns the request enriched. Same message,
-more resolved.
+A stream type is the identity of a record in motion.
+It says what this record *is* — not its data schema,
+but its functional identity.
 
-- **get** — args: keys. Value empty → filled.
-- **put** — args: metadata. Value: data to write → confirmed.
-- **delete** — args: keys. Value empty → removed data.
-- **noop** — args: null. Value passes through unchanged.
+### Execution Context: spl.mycelium.process.execute
+
+Context wrapper. Sets processing mode. Value contains
+the inner stream record being executed.
+
+```
+spl.mycelium.process.execute {
+  mode: string    (default "sync")
+}
+```
+
+### Operator Base: spl.data.stream.operator
+
+Method signature pattern. Args in, value out.
+Multiple operator stream types alias to this schema.
+
+```
+spl.data.stream.operator {
+  args: null | bytes    (default null)
+}
+```
+
+## The Onion — Nested Records
+
+An execution context wrapping a get operation:
+
+```
+spl.data.stream.record {
+  key: "/blog/submissions",
+  value: <inner record, serialized>,
+  headers: [
+    { key: "spl.data.stream",
+      value: { type: "spl.mycelium.process.execute" } },
+    { key: "spl.mycelium.process.execute",
+      value: { mode: "sync" } },
+    { key: "spl.pov",
+      value: "/home/user/project" }
+  ]
+}
+```
+
+Peel value:
+
+```
+spl.data.stream.record {
+  key: "/blog/submissions",
+  value: <empty — fills with output>,
+  headers: [
+    { key: "spl.data.stream",
+      value: { type: "spl.mycelium.xpath.raw.uri.get" } },
+    { key: "spl.mycelium.xpath.raw.uri.get",
+      value: { args: [[{ key: "/blog/submissions" }]] } }
+  ]
+}
+```
+
+## Headers Model
+
+- **Self-discovery:** enumerate keys to find what
+  schemas are present on the record
+- **Direct access:** read a specific key, decode with
+  that schema
+- **Open-ended:** any number of entries. Context
+  accumulates as the record travels.
+- **Key is schema name:** the key names the AVRO
+  schema (or alias) used to encode the value
 
 ## Dispatch
 
-Single path: `headers.record.schema`. One code path
-for every message.
+Read `spl.data.stream` header → get stream type →
+dispatch on type name. One path, one mechanism.
+
+## Processing Pipeline
+
+```
+arrive   → headers: descriptor + type bag   value: empty/inner
+execute  → headers: + status context        value: output
+```
