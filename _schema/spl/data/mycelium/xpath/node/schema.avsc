@@ -1,0 +1,23 @@
+{
+  "type": "record",
+  "name": "node",
+  "namespace": "spl.data.mycelium.xpath",
+  "fields": [
+    { "name": "type", "type": "string" },
+    { "name": "created", "type": "long" },
+    { "name": "modified", "type": "long" },
+    {
+      "name": "value",
+      "type": {
+        "type": "record",
+        "name": "content",
+        "namespace": "spl.data.mycelium.xpath",
+        "fields": [
+          { "name": "type", "type": "string" },
+          { "name": "length", "type": "long" },
+          { "name": "contents", "type": "bytes" }
+        ]
+      }
+    }
+  ]
+}

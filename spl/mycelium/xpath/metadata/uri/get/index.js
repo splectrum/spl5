@@ -2,17 +2,17 @@ const fs = require('bare-fs')
 const { Buffer } = require('spl/mycelium/runtime')
 const { contextHeader } = require('spl/mycelium/schema')
 const { withContext } = require('spl/mycelium/process/dispatch')
-const { resolvePath } = require('spl/mycelium/xpath/raw/uri/helpers')
+const { resolvePath, hasMetaSegment, isMetaName, filterMeta } = require('spl/mycelium/xpath/metadata/uri/helpers')
 
-// spl.mycelium.xpath.raw.uri.get
+// spl.mycelium.xpath.metadata.uri.get
 //
-// Returns a node record:
-//   { type, created, modified, value: { type, length, contents } }
-//
-// Node metadata is structured. Only value.contents
-// is opaque bytes.
+// Metadata lens. Shows underscore-prefixed nodes.
+// Once inside a metadata subtree (path contains an
+// underscore-prefixed segment), full visibility.
 
 module.exports = function get (record) {
+  let inMeta = hasMetaSegment(record.key)
+
   let target = resolvePath(record.headers, record.key)
 
   if (!target) {
@@ -32,28 +32,26 @@ module.exports = function get (record) {
 
   if (stat.isDirectory()) {
     let entries = fs.readdirSync(target)
+    if (!inMeta) entries = filterMeta(entries)
     let contents = Buffer.from(entries.join('\n'))
     node = {
       type: 'branch',
       created: Math.floor(stat.birthtimeMs),
       modified: Math.floor(stat.mtimeMs),
-      value: {
-        type: 'utf8',
-        length: contents.length,
-        contents: contents
-      }
+      value: { type: 'utf8', length: contents.length, contents }
     }
   } else {
+    if (!inMeta && !isMetaName(record.key)) {
+      return withContext(record, [
+        contextHeader('spl.error', 'get: not found — ' + record.key)
+      ])
+    }
     let contents = fs.readFileSync(target)
     node = {
       type: 'leaf',
       created: Math.floor(stat.birthtimeMs),
       modified: Math.floor(stat.mtimeMs),
-      value: {
-        type: 'binary',
-        length: contents.length,
-        contents: Buffer.from(contents)
-      }
+      value: { type: 'binary', length: contents.length, contents: Buffer.from(contents) }
     }
   }
 
@@ -62,9 +60,6 @@ module.exports = function get (record) {
     timestamp: Date.now(),
     key: record.key,
     value: node,
-    headers: [
-      ...record.headers,
-      contextHeader('spl.status', 'completed')
-    ]
+    headers: [...record.headers, contextHeader('spl.status', 'completed')]
   }
 }

@@ -9,9 +9,6 @@ const { repoRoot } = require('./resolve.js')
 // The _schema directory on the repo root is the local
 // schema registry. Reality is local.
 //
-// Namespace path → filesystem path:
-//   spl.data.stream.record → _schema/spl/data/stream/record.avsc
-//
 // Aliases: alias-mapping.txt at _schema root.
 // Two columns: alias name → schema name. Loaded once.
 
@@ -28,7 +25,6 @@ function getSchemaRoot () {
   return schemaRoot
 }
 
-// Load alias-mapping.txt into a map (once)
 function getAliasMap () {
   if (aliasMap) return aliasMap
   aliasMap = {}
@@ -46,11 +42,9 @@ function getAliasMap () {
   return aliasMap
 }
 
-// Load a schema by fully qualified name
 function loadSchema (name) {
   if (cache[name]) return cache[name]
 
-  // Check alias mapping
   let aliases = getAliasMap()
   if (aliases[name]) {
     let resolved = loadSchema(aliases[name])
@@ -62,7 +56,7 @@ function loadSchema (name) {
   if (!root) throw new Error('no _schema directory found')
 
   let parts = name.split('.')
-  let file = path.join(root, ...parts) + '.avsc'
+  let file = path.join(root, ...parts, 'schema.avsc')
 
   if (!fs.existsSync(file)) {
     throw new Error('schema not found: ' + name)
@@ -74,14 +68,12 @@ function loadSchema (name) {
   return type
 }
 
-// List all schema names under a namespace prefix
 function listSchemas (prefix) {
   let root = getSchemaRoot()
   if (!root) return []
 
   let names = []
 
-  // Filesystem schemas
   let parts = prefix.split('.')
   let dir = path.join(root, ...parts)
   if (fs.existsSync(dir)) {
@@ -90,15 +82,15 @@ function listSchemas (prefix) {
       if (entry.startsWith('_') || entry.startsWith('.')) continue
       let full = path.join(dir, entry)
       let stat = fs.statSync(full)
-      if (stat.isFile() && entry.endsWith('.avsc')) {
-        names.push(prefix + '.' + entry.slice(0, -5))
-      } else if (stat.isDirectory()) {
+      if (stat.isDirectory()) {
+        if (fs.existsSync(path.join(full, 'schema.avsc'))) {
+          names.push(prefix + '.' + entry)
+        }
         names.push(...listSchemas(prefix + '.' + entry))
       }
     }
   }
 
-  // Aliases matching prefix
   let aliases = getAliasMap()
   for (let alias of Object.keys(aliases)) {
     if (alias.startsWith(prefix + '.')) {
@@ -109,38 +101,36 @@ function listSchemas (prefix) {
   return names
 }
 
-// --- Convenience: load the core schemas ---
+// --- Core Schemas ---
 
 const StreamRecord = loadSchema('spl.data.stream.record')
 const OperatorBag = loadSchema('spl.data.stream.operator')
 const ExecuteContext = loadSchema('spl.data.mycelium.process.execute')
+const NodeRecord = loadSchema('spl.data.mycelium.xpath.node')
 
 // --- Header Helpers ---
 
-// Stream descriptor — resolved in the union, not encoded
-function streamHeader (type, args, value) {
-  return {
-    key: 'spl.data.stream',
-    value: { type, args: args || null, value: value || null }
-  }
+// Stream descriptor — resolved in the union
+function streamHeader (type) {
+  return { key: 'spl.data.stream', value: { type } }
 }
 
-// Typed reference for args/value in the descriptor
-function typedRef (schemaName, type, data) {
-  return { type: schemaName, value: type.toBuffer(data) }
-}
-
-// Type-specific header — encoded with its schema
+// Encoded header — packed with schema (for boundary)
 function encodedHeader (key, type, data) {
   return { key, value: type.toBuffer(data) }
 }
 
-// Context header — raw bytes
+// Plain header — object in memory, pack at boundary
+function header (key, value) {
+  return { key, value }
+}
+
+// Context header — string as raw bytes
 function contextHeader (key, value) {
   return { key, value: Buffer.from(value) }
 }
 
-// Read the stream descriptor from headers (already resolved)
+// Read the stream descriptor (already resolved)
 function getStreamDescriptor (headers) {
   let entry = headers.find(h => h.key === 'spl.data.stream')
   return entry ? entry.value : null
@@ -149,6 +139,14 @@ function getStreamDescriptor (headers) {
 // Find a header entry by key
 function findHeader (headers, key) {
   return headers.find(h => h.key === key)
+}
+
+// Read a header value — decode if packed, return as-is if plain
+function readHeader (entry, type) {
+  if (Buffer.isBuffer(entry.value) || entry.value instanceof Uint8Array) {
+    return type.fromBuffer(entry.value)
+  }
+  return entry.value
 }
 
 // List all header keys
@@ -162,11 +160,13 @@ module.exports = {
   StreamRecord,
   OperatorBag,
   ExecuteContext,
+  NodeRecord,
   streamHeader,
-  typedRef,
   encodedHeader,
+  header,
   contextHeader,
   getStreamDescriptor,
   findHeader,
+  readHeader,
   headerKeys
 }

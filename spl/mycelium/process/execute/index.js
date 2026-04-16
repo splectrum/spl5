@@ -1,5 +1,16 @@
-const { StreamRecord, ExecuteContext, contextHeader, findHeader } = require('../../schema.js')
-const { dispatch, withContext } = require('../dispatch')
+const { Buffer } = require('spl/mycelium/runtime')
+const { StreamRecord, ExecuteContext, NodeRecord, contextHeader, findHeader } = require('spl/mycelium/schema')
+const { dispatch, withContext } = require('spl/mycelium/process/dispatch')
+
+// Pack a value for boundary crossing.
+// Plain objects → AVRO bytes via NodeRecord schema.
+// Buffers pass through.
+function packValue (val) {
+  if (val === null || val === undefined) return Buffer.alloc(0)
+  if (Buffer.isBuffer(val) || val instanceof Uint8Array) return val
+  try { return NodeRecord.toBuffer(val) }
+  catch (e) { return Buffer.alloc(0) }
+}
 
 // spl.mycelium.process.execute
 //
@@ -51,9 +62,9 @@ function execute (record) {
 
   let result = dispatch(inner)
 
-  // Pack result back for the boundary (into value)
-  // Re-encode the execute context in result headers
-  let resultHeaders = result.headers.map(h => {
+  // Pack for boundary crossing
+  let packedValue = packValue(result.value)
+  let packedHeaders = result.headers.map(h => {
     if (h.key === EXEC_KEY && typeof h.value === 'object' && !Buffer.isBuffer(h.value)) {
       return { key: h.key, value: ExecuteContext.toBuffer(h.value) }
     }
@@ -68,8 +79,8 @@ function execute (record) {
       offset: result.offset,
       timestamp: result.timestamp,
       key: result.key,
-      value: result.value,
-      headers: resultHeaders
+      value: packedValue,
+      headers: packedHeaders
     }),
     headers: [
       ...record.headers,

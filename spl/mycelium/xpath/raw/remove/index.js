@@ -3,9 +3,9 @@ const { contextHeader } = require('spl/mycelium/schema')
 const { withContext } = require('spl/mycelium/process/dispatch')
 const { resolvePath } = require('spl/mycelium/xpath/raw/uri/helpers')
 
-// spl.mycelium.xpath.raw.uri.remove
+// spl.mycelium.xpath.raw.remove
 //
-// Remove a node. Just removes. Value stays empty.
+// Schema-aware raw. Full visibility. Filesystem remove.
 
 module.exports = function remove (record) {
   let target = resolvePath(record.headers, record.key)
@@ -23,11 +23,8 @@ module.exports = function remove (record) {
   }
 
   let stat = fs.statSync(target)
-  if (stat.isFile()) {
-    fs.unlinkSync(target)
-  } else if (stat.isDirectory()) {
-    fs.rmdirSync(target, { recursive: true })
-  }
+  if (stat.isFile()) fs.unlinkSync(target)
+  else if (stat.isDirectory()) fs.rmdirSync(target, { recursive: true })
 
   return withContext(record, [
     contextHeader('spl.status', 'completed')

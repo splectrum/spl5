@@ -1,0 +1,8 @@
+{
+  "type": "record",
+  "name": "descriptor",
+  "namespace": "spl.data.stream",
+  "fields": [
+    { "name": "type", "type": "string" }
+  ]
+}

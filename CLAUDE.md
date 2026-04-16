@@ -48,7 +48,7 @@ collaborative — scope, meaning, design, direction.
 
 Namespace-mapped layout. Directory = namespace node.
 `index.js` = code for that name. Other files =
-auxiliary.
+auxiliary. Schema directories use `schema.avsc`.
 
 ```
 spl/                  — spl namespace root
@@ -67,14 +67,23 @@ spl/                  — spl namespace root
       execute/index.js  — execution context (peel onion)
     xpath/            — spl.mycelium.xpath
       raw/uri/
-        get/index.js  — rawuri get (stub)
-        put/index.js  — rawuri put (stub)
-        remove/index.js — rawuri remove (stub)
-        helpers.js    — shared auxiliary
+        get/index.js    — rawuri get
+        put/index.js    — rawuri put
+        remove/index.js — rawuri remove
+        helpers.js      — shared: path resolution, args decoding
 
 _schema/              — local schema registry (metadata)
   alias-mapping.txt   — stream type → data schema
-  spl/data/           — AVRO data schemas (.avsc)
+  spl/data/           — AVRO data schemas
+    stream/
+      record/schema.avsc    — common stream record
+      descriptor/schema.avsc — { type } dispatch info
+      operator/schema.avsc  — base: { args, value }
+    mycelium/
+      process/
+        execute/schema.avsc — { args, value, mode, root }
+      xpath/
+        node/schema.avsc    — { type, created, modified, value: { type, length, contents } }
 
 _server/              — server instance (logs, state)
 bin/                  — entry points (spl, spl-server, setup)
@@ -82,7 +91,7 @@ lib/                  — all dependencies
   avsc/              — AVRO types/serialization (subtree)
   avsc-rpc/          — AVRO RPC protocol (subtree)
   bare-*/            — platform deps (gitignored)
-docs/                — schema reference, design submissions
+docs/                — DECISIONS.md, MESSAGE.md, design submissions
 ```
 
 - **Bare only** — no Node.js, no dual-runtime
@@ -95,48 +104,71 @@ docs/                — schema reference, design submissions
 
 - Stream record schema (spl.data.stream.record)
   with resolved descriptor union in headers
-- Stream type dispatch: process.execute peels onion,
-  xpath.raw.uri.get/put/remove stubs
+- Dispatch resolves handlers from namespace path:
+  spl.mycelium.process.execute → spl/mycelium/process/execute/index.js
+- process.execute peels onion, unpacks execution context,
+  propagates to inner record, packs at boundary
+- rawuri get: returns node record { type, created,
+  modified, value: { type, length, contents } }
+- rawuri put: writes value to path
+- rawuri remove: removes node
+- Execution context: root = { repo (absolute), local
+  (relative from repo root, starting with /) }
+- Path resolution: / = local root, always forward
+- Schema registry: _schema with schema.avsc convention,
+  alias-mapping.txt
 - AVRO RPC protocol over TCP on Bare
 - Global CLI: `spl <schema> [key] [args...]`
-- Local schema registry: _schema with .avsc files
-  and alias-mapping.txt
-- In-memory pipeline (test-client.js)
+- Schema-aware display: decodes known types in headers
+
+## Current Work
+
+Implementing rawuri with proper node record responses.
+Key principles being applied:
+
+- Node response is structured (type, timestamps, value).
+  Only value.contents is opaque bytes.
+- Pack at boundary only — handlers return plain objects,
+  serialization happens when crossing RPC/onion boundary.
+  AVRO (NodeRecord.toBuffer), not JSON.
+- Read with fallback — try schema decode, fall back to
+  plain object if already unpacked.
+- / means local root. Paths resolve forward only.
+  URIs returned are relative to local root.
+- Functional resolution walks UP from local root to
+  repo root (ancestor axis). Data scope walks DOWN
+  from local root (descendants only).
 
 ## POC Sequence
 
-1. ~~AVRO RPC server with spl.cli.execute message~~ ✓
+1. ~~AVRO RPC server~~ ✓
 2. ~~CLI submitting to server~~ ✓
-3. ~~Stream record redesign: headers, stream types,
-   dispatch, schema registry~~ ✓
-4. rawuri (get/put/remove) implementation
+3. ~~Stream record redesign~~ ✓
+4. **rawuri get/put/remove** — in progress
 5. Register rawuri on repo root node
 6. Protocol resolution in cli.execute
-7. Expand: datauri, metadatauri, learn from prototype
+7. Expand: datauri, metadatauri
 
 ## Key Design Decisions
 
-- Kafka record stream shape: offset, timestamp, key,
-  value, headers (open key-value list)
-- Stream descriptor resolved in header union — zero
-  decode dispatch on happy path
-- Stream types: functional identity in motion. Dispatch
-  on headers.stream.type
-- Dual header entry: base descriptor for generic code,
-  type-specific entry for handlers (future)
-- One base property bag schema (args + value), specific
-  types extend it. AVRO "readable as" handles many reads
-- Schema aliasing: stream type names alias to spl.data
-  schemas via alias-mapping.txt
-- _schema on repo root = local schema registry.
-  Reality is local
-- spl.data namespace for AVRO data schemas (carrier).
-  Other namespaces for meaning (stream types)
-- Namespace-mapped code layout: directory = node,
-  index.js = code, other files = auxiliary
-- Six fabric APIs (datauri/metadatauri/rawuri +
-  data/metadata/raw)
-- Underscore prefix as metadata dimension boundary
-- Node self-containment for lift-and-shift portability
-- Constitutive deps as git subtrees in lib/
-- Platform deps gitignored, populated by bin/setup
+See docs/DECISIONS.md for full log. Key points:
+
+- Stream descriptor: { type } only — zero-cost dispatch
+- Dual header entry: descriptor (base) + type-specific
+  entry (mode, root, etc.)
+- Handler contract: handler(record) → record. No
+  dispatch arg. Orchestration in orchestrator types.
+- Dispatch from namespace path: no registration.
+  require(spl/path/to/handler)
+- One function per module export
+- spl/ root directory for all spl namespace code
+- Execution context: root.repo = absolute filesystem
+  path, root.local = /segment/path from repo root
+- Node record: { type, created, modified, value:
+  { type, length, contents } }. Metadata structured,
+  content opaque bytes.
+- Pack at boundary: plain objects in memory, AVRO
+  serialization at RPC/onion boundaries only
+- Schema directory convention: name/schema.avsc
+  (matches code: name/index.js)
+- No JSON serialization — AVRO is the wire format

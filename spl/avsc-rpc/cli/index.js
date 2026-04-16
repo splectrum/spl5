@@ -1,16 +1,16 @@
-const { Buffer, process } = require('../../mycelium/runtime.js')
+const { Buffer, process } = require('spl/mycelium/runtime')
 const net = require('bare-net')
-const { service } = require('../protocol.js')
+const path = require('bare-path')
+const { service } = require('spl/avsc-rpc/protocol')
 const {
   StreamRecord,
   OperatorBag,
   ExecuteContext,
   streamHeader,
-  typedRef,
   encodedHeader
-} = require('../../mycelium/schema.js')
-const { repoRoot } = require('../../mycelium/resolve.js')
-const { nested } = require('../display.js')
+} = require('spl/mycelium/schema')
+const { repoRoot } = require('spl/mycelium/resolve')
+const { nested } = require('spl/avsc-rpc/display')
 
 const PORT = 24950
 
@@ -25,28 +25,29 @@ if (!schema) {
   process.exit(1)
 }
 
-// Resolve roots on the client side
-const local = process.cwd()
-const repo = repoRoot(local)
+const cwd = process.cwd()
+const repo = repoRoot(cwd)
 
 if (!repo) {
   console.error('spl: not inside a repository')
   process.exit(1)
 }
 
+const local = '/' + path.relative(repo, cwd)
+
 // Build inner operator
+// args[0] is operator value (input data), rest are operator args
 const innerOp = {
   offset: 0,
   timestamp: Date.now(),
   key: key,
   value: Buffer.alloc(0),
   headers: [
-    streamHeader(schema,
-      typedRef('spl.data.stream.operator', OperatorBag, {
-        args: args.length ? Buffer.from(JSON.stringify(args)) : null,
-        value: null
-      })
-    )
+    streamHeader(schema),
+    encodedHeader(schema, OperatorBag, {
+      args: args.length > 1 ? Buffer.from(JSON.stringify(args.slice(1))) : null,
+      value: args.length ? Buffer.from(args[0]) : null
+    })
   ]
 }
 
@@ -59,12 +60,7 @@ const exec = {
   key: key,
   value: innerBytes,
   headers: [
-    // Base descriptor — dispatch info
-    streamHeader('spl.mycelium.process.execute',
-      null,
-      { type: 'spl.data.stream.record', value: innerBytes }
-    ),
-    // Type-specific — execution context properties
+    streamHeader('spl.mycelium.process.execute'),
     encodedHeader('spl.mycelium.process.execute', ExecuteContext, {
       args: null, value: null, mode: 'sync',
       root: { repo, local }

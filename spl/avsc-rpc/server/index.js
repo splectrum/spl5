@@ -1,11 +1,11 @@
 const net = require('bare-net')
 const path = require('bare-path')
 const fs = require('bare-fs')
-const { process } = require('../../mycelium/runtime.js')
-const { contextHeader } = require('../../mycelium/schema.js')
-const { service } = require('../protocol.js')
-const { readable } = require('../display.js')
-const { dispatch } = require('../../mycelium/process/dispatch')
+const { process } = require('spl/mycelium/runtime')
+const { contextHeader } = require('spl/mycelium/schema')
+const { service } = require('spl/avsc-rpc/protocol')
+const { readable } = require('spl/avsc-rpc/display')
+const { dispatch } = require('spl/mycelium/process/dispatch')
 
 // --- Logging ---
 

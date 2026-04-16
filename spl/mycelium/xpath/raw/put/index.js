@@ -4,10 +4,9 @@ const { contextHeader } = require('spl/mycelium/schema')
 const { withContext } = require('spl/mycelium/process/dispatch')
 const { resolvePath, operatorValue } = require('spl/mycelium/xpath/raw/uri/helpers')
 
-// spl.mycelium.xpath.raw.uri.put
+// spl.mycelium.xpath.raw.put
 //
-// Write content to a path. Input data comes from the
-// operator bag value (function argument), not record value.
+// Schema-aware raw. Full visibility. Filesystem write.
 
 module.exports = function put (record) {
   let target = resolvePath(record.headers, record.key)

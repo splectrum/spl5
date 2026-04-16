@@ -2,17 +2,19 @@ const fs = require('bare-fs')
 const { Buffer } = require('spl/mycelium/runtime')
 const { contextHeader } = require('spl/mycelium/schema')
 const { withContext } = require('spl/mycelium/process/dispatch')
-const { resolvePath } = require('spl/mycelium/xpath/raw/uri/helpers')
+const { resolvePath, hasMetaSegment, filterData } = require('spl/mycelium/xpath/data/uri/helpers')
 
-// spl.mycelium.xpath.raw.uri.get
+// spl.mycelium.xpath.data.uri.get
 //
-// Returns a node record:
-//   { type, created, modified, value: { type, length, contents } }
-//
-// Node metadata is structured. Only value.contents
-// is opaque bytes.
+// Data lens. Underscore-prefixed nodes are invisible.
 
 module.exports = function get (record) {
+  if (hasMetaSegment(record.key)) {
+    return withContext(record, [
+      contextHeader('spl.error', 'get: not found — ' + record.key)
+    ])
+  }
+
   let target = resolvePath(record.headers, record.key)
 
   if (!target) {
@@ -31,17 +33,13 @@ module.exports = function get (record) {
   let node
 
   if (stat.isDirectory()) {
-    let entries = fs.readdirSync(target)
+    let entries = filterData(fs.readdirSync(target))
     let contents = Buffer.from(entries.join('\n'))
     node = {
       type: 'branch',
       created: Math.floor(stat.birthtimeMs),
       modified: Math.floor(stat.mtimeMs),
-      value: {
-        type: 'utf8',
-        length: contents.length,
-        contents: contents
-      }
+      value: { type: 'utf8', length: contents.length, contents }
     }
   } else {
     let contents = fs.readFileSync(target)
@@ -49,11 +47,7 @@ module.exports = function get (record) {
       type: 'leaf',
       created: Math.floor(stat.birthtimeMs),
       modified: Math.floor(stat.mtimeMs),
-      value: {
-        type: 'binary',
-        length: contents.length,
-        contents: Buffer.from(contents)
-      }
+      value: { type: 'binary', length: contents.length, contents: Buffer.from(contents) }
     }
   }
 
@@ -62,9 +56,6 @@ module.exports = function get (record) {
     timestamp: Date.now(),
     key: record.key,
     value: node,
-    headers: [
-      ...record.headers,
-      contextHeader('spl.status', 'completed')
-    ]
+    headers: [...record.headers, contextHeader('spl.status', 'completed')]
   }
 }

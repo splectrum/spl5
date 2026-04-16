@@ -1,13 +1,19 @@
 const fs = require('bare-fs')
 const { contextHeader } = require('spl/mycelium/schema')
 const { withContext } = require('spl/mycelium/process/dispatch')
-const { resolvePath } = require('spl/mycelium/xpath/raw/uri/helpers')
+const { resolvePath, hasMetaSegment } = require('spl/mycelium/xpath/data/uri/helpers')
 
-// spl.mycelium.xpath.raw.uri.remove
+// spl.mycelium.xpath.data.uri.remove
 //
-// Remove a node. Just removes. Value stays empty.
+// Data lens. Cannot remove underscore-prefixed paths.
 
 module.exports = function remove (record) {
+  if (hasMetaSegment(record.key)) {
+    return withContext(record, [
+      contextHeader('spl.error', 'remove: metadata path not accessible — ' + record.key)
+    ])
+  }
+
   let target = resolvePath(record.headers, record.key)
 
   if (!target) {
@@ -23,11 +29,8 @@ module.exports = function remove (record) {
   }
 
   let stat = fs.statSync(target)
-  if (stat.isFile()) {
-    fs.unlinkSync(target)
-  } else if (stat.isDirectory()) {
-    fs.rmdirSync(target, { recursive: true })
-  }
+  if (stat.isFile()) fs.unlinkSync(target)
+  else if (stat.isDirectory()) fs.rmdirSync(target, { recursive: true })
 
   return withContext(record, [
     contextHeader('spl.status', 'completed')

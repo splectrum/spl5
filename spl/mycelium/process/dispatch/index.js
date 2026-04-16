@@ -1,6 +1,6 @@
 const path = require('bare-path')
-const { getStreamDescriptor, contextHeader } = require('../../schema.js')
-const { repoRoot } = require('../../resolve.js')
+const { getStreamDescriptor, contextHeader } = require('spl/mycelium/schema')
+const { repoRoot } = require('spl/mycelium/resolve')
 
 // spl.mycelium.process.dispatch
 //

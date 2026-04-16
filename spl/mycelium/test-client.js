@@ -4,29 +4,29 @@ const {
   OperatorBag,
   ExecuteContext,
   streamHeader,
-  typedRef,
   encodedHeader
 } = require('./schema.js')
 const { repoRoot } = require('./resolve.js')
 const { dispatch } = require('./process/dispatch')
 const { nested } = require('../avsc-rpc/display.js')
 
-const local = process.cwd()
-const repo = repoRoot(local)
+const path = require('bare-path')
+const cwd = process.cwd()
+const repo = repoRoot(cwd)
+const local = '/' + path.relative(repo, cwd)
 
 // Inner operator: spl.mycelium.xpath.raw.uri.get
 const innerOp = {
   offset: 0,
   timestamp: Date.now(),
-  key: '/blog/submissions',
+  key: '/package.json',
   value: Buffer.alloc(0),
   headers: [
-    streamHeader('spl.mycelium.xpath.raw.uri.get',
-      typedRef('spl.data.stream.operator', OperatorBag, {
-        args: Buffer.from(JSON.stringify([[{ key: '/blog/submissions' }]])),
-        value: null
-      })
-    )
+    streamHeader('spl.mycelium.xpath.raw.uri.get'),
+    encodedHeader('spl.mycelium.xpath.raw.uri.get', OperatorBag, {
+      args: Buffer.from(JSON.stringify([[{ key: '/package.json' }]])),
+      value: null
+    })
   ]
 }
 
@@ -36,13 +36,10 @@ const innerBytes = StreamRecord.toBuffer(innerOp)
 const exec = {
   offset: 0,
   timestamp: Date.now(),
-  key: '/blog/submissions',
+  key: '/package.json',
   value: innerBytes,
   headers: [
-    streamHeader('spl.mycelium.process.execute',
-      null,
-      { type: 'spl.data.stream.record', value: innerBytes }
-    ),
+    streamHeader('spl.mycelium.process.execute'),
     encodedHeader('spl.mycelium.process.execute', ExecuteContext, {
       args: null, value: null, mode: 'sync',
       root: { repo, local }

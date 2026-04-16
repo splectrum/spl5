@@ -2,14 +2,19 @@ const fs = require('bare-fs')
 const path = require('bare-path')
 const { contextHeader } = require('spl/mycelium/schema')
 const { withContext } = require('spl/mycelium/process/dispatch')
-const { resolvePath, operatorValue } = require('spl/mycelium/xpath/raw/uri/helpers')
+const { resolvePath, operatorValue, hasMetaSegment, isMetaName } = require('spl/mycelium/xpath/metadata/uri/helpers')
 
-// spl.mycelium.xpath.raw.uri.put
+// spl.mycelium.xpath.metadata.put
 //
-// Write content to a path. Input data comes from the
-// operator bag value (function argument), not record value.
+// Schema-aware metadata. Only write to metadata paths.
 
 module.exports = function put (record) {
+  if (!hasMetaSegment(record.key) && !isMetaName(record.key)) {
+    return withContext(record, [
+      contextHeader('spl.error', 'put: not a metadata path — ' + record.key)
+    ])
+  }
+
   let target = resolvePath(record.headers, record.key)
 
   if (!target) {
