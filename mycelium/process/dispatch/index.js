@@ -1,18 +1,47 @@
-const { Buffer } = require('../../runtime.js')
+const path = require('bare-path')
 const { getStreamDescriptor, contextHeader } = require('../../schema.js')
+const { repoRoot } = require('../../resolve.js')
 
 // spl.mycelium.process.dispatch
 //
-// Handler registry + dispatch. Read the stream
-// descriptor, route to the handler.
-// Contract: handler(record) → record.
-// Orchestration (sequencing, pipelines) lives in
-// orchestrator types, not in handlers.
+// Read the stream descriptor, resolve the handler from
+// the namespace path, run it. Contract: handler(record) → record.
+//
+// Handler resolution: spl.mycelium.process.execute
+//   → strip 'spl.' → mycelium/process/execute
+//   → require from repo root → index.js
+//
+// No registration. The namespace IS the path.
+// Failure to require = no handler = error on the record.
 
-const handlers = {}
+const handlerCache = {}
+let root = null
 
-function register (streamType, handler) {
-  handlers[streamType] = handler
+function getRoot () {
+  if (root) return root
+  root = repoRoot(typeof Bare !== 'undefined'
+    ? require('bare-os').cwd()
+    : process.cwd())
+  return root
+}
+
+function resolveHandler (streamType) {
+  if (handlerCache[streamType]) return handlerCache[streamType]
+
+  let parts = streamType.split('.')
+  if (parts[0] === 'spl') parts.shift()
+  let modulePath = path.join(getRoot(), ...parts)
+
+  try {
+    let handler = require(modulePath)
+    if (typeof handler === 'function') {
+      handlerCache[streamType] = handler
+      return handler
+    }
+    return null
+  } catch (e) {
+    return null
+  }
 }
 
 function dispatch (record) {
@@ -23,7 +52,7 @@ function dispatch (record) {
     ])
   }
 
-  let handler = handlers[desc.type]
+  let handler = resolveHandler(desc.type)
   if (!handler) {
     return withContext(record, [
       contextHeader('spl.error', 'no handler for ' + desc.type)
@@ -43,4 +72,4 @@ function withContext (record, extra) {
   }
 }
 
-module.exports = { dispatch, register, withContext }
+module.exports = { dispatch, withContext }

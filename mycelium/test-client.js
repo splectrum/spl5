@@ -7,7 +7,6 @@ const {
   typedRef,
   contextHeader
 } = require('./schema.js')
-require('./')
 const { dispatch } = require('./process/dispatch')
 const { nested } = require('../avsc-rpc/display.js')
 

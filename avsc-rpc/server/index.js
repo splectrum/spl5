@@ -6,7 +6,6 @@ const { repoRoot } = require('../../mycelium/resolve.js')
 const { contextHeader, findHeader } = require('../../mycelium/schema.js')
 const { service } = require('../protocol.js')
 const { readable } = require('../display.js')
-require('../../mycelium')
 const { dispatch } = require('../../mycelium/process/dispatch')
 
 // --- Logging ---
