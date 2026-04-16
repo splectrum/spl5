@@ -5,6 +5,18 @@
   "fields": [
     { "name": "args", "type": ["null", "bytes"], "default": null },
     { "name": "value", "type": ["null", "bytes"], "default": null },
-    { "name": "mode", "type": "string", "default": "sync" }
+    { "name": "mode", "type": "string", "default": "sync" },
+    {
+      "name": "root",
+      "type": {
+        "type": "record",
+        "name": "root",
+        "namespace": "spl.data.mycelium.process",
+        "fields": [
+          { "name": "repo", "type": "string" },
+          { "name": "local", "type": "string" }
+        ]
+      }
+    }
   ]
 }

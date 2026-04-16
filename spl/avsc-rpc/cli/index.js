@@ -6,9 +6,9 @@ const {
   OperatorBag,
   ExecuteContext,
   streamHeader,
-  typedRef,
-  contextHeader
+  typedRef
 } = require('../../mycelium/schema.js')
+const { repoRoot } = require('../../mycelium/resolve.js')
 const { nested } = require('../display.js')
 
 const PORT = 24950
@@ -21,6 +21,15 @@ const args = argv.slice(2)
 
 if (!schema) {
   console.error('usage: spl <schema> [key] [args...]')
+  process.exit(1)
+}
+
+// Resolve roots on the client side
+const local = process.cwd()
+const repo = repoRoot(local)
+
+if (!repo) {
+  console.error('spl: not inside a repository')
   process.exit(1)
 }
 
@@ -49,11 +58,11 @@ const exec = {
   headers: [
     streamHeader('spl.mycelium.process.execute',
       typedRef('spl.data.mycelium.process.execute', ExecuteContext, {
-        args: null, value: null, mode: 'sync'
+        args: null, value: null, mode: 'sync',
+        root: { repo, local }
       }),
       { type: 'spl.data.stream.record', value: StreamRecord.toBuffer(innerOp) }
-    ),
-    contextHeader('spl.pov', process.cwd())
+    )
   ]
 }
 

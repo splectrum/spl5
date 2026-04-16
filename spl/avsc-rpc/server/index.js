@@ -2,20 +2,12 @@ const net = require('bare-net')
 const path = require('bare-path')
 const fs = require('bare-fs')
 const { process } = require('../../mycelium/runtime.js')
-const { repoRoot } = require('../../mycelium/resolve.js')
-const { contextHeader, findHeader } = require('../../mycelium/schema.js')
+const { contextHeader } = require('../../mycelium/schema.js')
 const { service } = require('../protocol.js')
 const { readable } = require('../display.js')
 const { dispatch } = require('../../mycelium/process/dispatch')
 
 // --- Logging ---
-
-const decoder = new TextDecoder()
-function str (val) {
-  if (typeof val === 'string') return val
-  if (val instanceof Uint8Array) return decoder.decode(val)
-  return '' + val
-}
 
 function logMessage (dir, msg) {
   fs.mkdirSync(dir, { recursive: true })
@@ -37,10 +29,6 @@ const server = service.createServer()
       let logDir = path.join(process.cwd(), '_server', 'log')
       let logFile = logMessage(logDir, envelope)
 
-      let povEntry = findHeader(envelope.headers, 'spl.pov')
-      let pov = povEntry ? str(povEntry.value) : null
-      let root = pov ? repoRoot(pov) : null
-
       let enriched = {
         offset: envelope.offset,
         timestamp: envelope.timestamp,
@@ -48,8 +36,7 @@ const server = service.createServer()
         value: envelope.value,
         headers: [
           ...envelope.headers,
-          contextHeader('spl.log', logFile),
-          ...(root ? [contextHeader('spl.root', root)] : [])
+          contextHeader('spl.log', logFile)
         ]
       }
 

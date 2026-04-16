@@ -4,11 +4,14 @@ const {
   OperatorBag,
   ExecuteContext,
   streamHeader,
-  typedRef,
-  contextHeader
+  typedRef
 } = require('./schema.js')
+const { repoRoot } = require('./resolve.js')
 const { dispatch } = require('./process/dispatch')
 const { nested } = require('../avsc-rpc/display.js')
+
+const local = process.cwd()
+const repo = repoRoot(local)
 
 // Inner operator: spl.mycelium.xpath.raw.uri.get
 const innerOp = {
@@ -37,11 +40,11 @@ const exec = {
   headers: [
     streamHeader('spl.mycelium.process.execute',
       typedRef('spl.data.mycelium.process.execute', ExecuteContext, {
-        args: null, value: null, mode: 'sync'
+        args: null, value: null, mode: 'sync',
+        root: { repo, local }
       }),
       { type: 'spl.data.stream.record', value: innerBytes }
-    ),
-    contextHeader('spl.pov', process.cwd())
+    )
   ]
 }
 
