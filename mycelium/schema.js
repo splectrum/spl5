@@ -5,17 +5,20 @@ const { repoRoot } = require('./resolve.js')
 
 // --- Schema Loader ---
 //
-// Loads .avsc files from the _schema tree by namespace
-// path. The _schema directory on the repo root is the
-// local schema registry. Reality is local.
+// Loads schemas from the _schema tree by namespace path.
+// The _schema directory on the repo root is the local
+// schema registry. Reality is local.
 //
 // Namespace path → filesystem path:
 //   spl.data.stream.record → _schema/spl/data/stream/record.avsc
 //
-// Aliases: an .avsc file with { "alias": "spl.data.stream.operator" }
-// resolves to the aliased schema. The alias is a fact in the filesystem.
+// Aliases: _alias file in a directory maps local names
+// to schema names. One file per directory, loaded once.
+//   _schema/spl/mycelium/xpath/raw/uri/_alias
+//   { "get": "spl.data.stream.operator", ... }
 
 const cache = {}
+const aliasCache = {}
 let schemaRoot = null
 
 function getSchemaRoot () {
@@ -25,6 +28,18 @@ function getSchemaRoot () {
     : process.cwd())
   schemaRoot = root ? path.join(root, '_schema') : null
   return schemaRoot
+}
+
+// Load the _alias map for a directory (cached)
+function loadAliasMap (dir) {
+  if (aliasCache[dir] !== undefined) return aliasCache[dir]
+  let file = path.join(dir, '_alias')
+  if (fs.existsSync(file)) {
+    aliasCache[dir] = JSON.parse(fs.readFileSync(file, 'utf-8'))
+  } else {
+    aliasCache[dir] = null
+  }
+  return aliasCache[dir]
 }
 
 // Load a schema by fully qualified name
@@ -37,23 +52,26 @@ function loadSchema (name) {
   let parts = name.split('.')
   let file = path.join(root, ...parts) + '.avsc'
 
-  if (!fs.existsSync(file)) {
-    throw new Error('schema not found: ' + name + ' (' + file + ')')
+  // Direct .avsc file
+  if (fs.existsSync(file)) {
+    let def = JSON.parse(fs.readFileSync(file, 'utf-8'))
+    let type = avro.Type.forSchema(def)
+    cache[name] = type
+    return type
   }
 
-  let text = fs.readFileSync(file, 'utf-8')
-  let def = JSON.parse(text)
+  // Check _alias in parent directory
+  let localName = parts[parts.length - 1]
+  let dir = path.join(root, ...parts.slice(0, -1))
+  let aliases = loadAliasMap(dir)
 
-  // Resolve alias
-  if (def.alias) {
-    let resolved = loadSchema(def.alias)
+  if (aliases && aliases[localName]) {
+    let resolved = loadSchema(aliases[localName])
     cache[name] = resolved
     return resolved
   }
 
-  let type = avro.Type.forSchema(def)
-  cache[name] = type
-  return type
+  throw new Error('schema not found: ' + name)
 }
 
 // List all schema names under a namespace prefix
@@ -69,15 +87,24 @@ function listSchemas (prefix) {
   let names = []
   let entries = fs.readdirSync(dir)
   for (let entry of entries) {
+    if (entry.startsWith('_')) continue
     let full = path.join(dir, entry)
     let stat = fs.statSync(full)
     if (stat.isFile() && entry.endsWith('.avsc')) {
       names.push(prefix + '.' + entry.slice(0, -5))
     } else if (stat.isDirectory()) {
-      // Recurse into subdirectories
       names.push(...listSchemas(prefix + '.' + entry))
     }
   }
+
+  // Include aliases from _alias map
+  let aliases = loadAliasMap(dir)
+  if (aliases) {
+    for (let key of Object.keys(aliases)) {
+      names.push(prefix + '.' + key)
+    }
+  }
+
   return names
 }
 
