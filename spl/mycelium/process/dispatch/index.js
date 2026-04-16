@@ -29,7 +29,6 @@ function resolveHandler (streamType) {
   if (handlerCache[streamType]) return handlerCache[streamType]
 
   let parts = streamType.split('.')
-  if (parts[0] === 'spl') parts.shift()
   let modulePath = path.join(getRoot(), ...parts)
 
   try {

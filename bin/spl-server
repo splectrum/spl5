@@ -2,4 +2,4 @@
 # spl-server — Splectrum RPC server.
 # System service: serves requests for any repo on the filesystem.
 DIR="$(cd "$(dirname "$0")/.." && pwd)"
-exec bare "$DIR/avsc-rpc/server" "$@"
+exec bare "$DIR/spl/avsc-rpc/server" "$@"

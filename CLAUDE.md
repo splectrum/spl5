@@ -51,23 +51,26 @@ Namespace-mapped layout. Directory = namespace node.
 auxiliary.
 
 ```
-avsc-rpc/             — spl.avsc-rpc (RPC layer)
-  protocol.js         — RPC protocol definition
-  display.js          — human-readable rendering
-  server/index.js     — RPC server, TCP, handler registration
-  cli/index.js        — CLI client
-
-mycelium/             — spl.mycelium (fabric)
-  runtime.js          — Bare runtime essentials
-  resolve.js          — repo root resolution
-  schema.js           — schema loader + helpers
-  test-client.js      — in-memory test script
-  process/            — spl.mycelium.process
-    dispatch/index.js — handler registry + dispatch
-    execute/index.js  — execution context (peel onion)
-  xpath/              — spl.mycelium.xpath
-    raw/
-      uri/index.js    — get/put/remove operators (stubs)
+spl/                  — spl namespace root
+  avsc-rpc/           — spl.avsc.rpc (RPC layer)
+    protocol.js       — RPC protocol definition
+    display.js        — human-readable rendering
+    server/index.js   — RPC server, TCP transport
+    cli/index.js      — CLI client
+  mycelium/           — spl.mycelium (fabric)
+    runtime.js        — Bare runtime essentials
+    resolve.js        — repo root resolution
+    schema.js         — schema loader + helpers
+    test-client.js    — in-memory test script
+    process/          — spl.mycelium.process
+      dispatch/index.js — namespace-path handler resolution
+      execute/index.js  — execution context (peel onion)
+    xpath/            — spl.mycelium.xpath
+      raw/uri/
+        get/index.js  — rawuri get (stub)
+        put/index.js  — rawuri put (stub)
+        remove/index.js — rawuri remove (stub)
+        helpers.js    — shared auxiliary
 
 _schema/              — local schema registry (metadata)
   alias-mapping.txt   — stream type → data schema
