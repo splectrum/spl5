@@ -1,6 +1,8 @@
+const path = require('bare-path')
 const {
   OperatorBag,
-  getStreamDescriptor
+  getStreamDescriptor,
+  findHeader
 } = require('../../../schema.js')
 
 const decoder = new TextDecoder()
@@ -11,6 +13,7 @@ function str (val) {
   return '' + val
 }
 
+// Decode operator args from the descriptor's typed reference
 function decodeArgs (desc) {
   if (!desc || !desc.args) return null
   try {
@@ -25,4 +28,19 @@ function decodeArgs (desc) {
   }
 }
 
-module.exports = { str, decodeArgs }
+// Read execution context — already unpacked by execute handler
+function execContext (headers) {
+  let entry = findHeader(headers, 'spl.mycelium.process.execute')
+  if (!entry) return null
+  return entry.value
+}
+
+// Resolve a key to an absolute filesystem path
+function resolvePath (headers, key) {
+  let ctx = execContext(headers)
+  if (!ctx || !ctx.root) return null
+  let rel = key.startsWith('/') ? key.slice(1) : key
+  return path.join(ctx.root.repo, rel)
+}
+
+module.exports = { str, decodeArgs, execContext, resolvePath }
