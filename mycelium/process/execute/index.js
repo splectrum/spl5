@@ -1,13 +1,14 @@
 const { StreamRecord, contextHeader } = require('../../schema.js')
-const { withContext } = require('../dispatch')
+const { dispatch, withContext } = require('../dispatch')
 
 // spl.mycelium.process.execute
 //
-// Execution context wrapper. Peels the onion —
-// deserializes value as an inner stream record,
-// dispatches it, puts the result back.
+// Execution context. Peels the onion — deserializes
+// value as an inner stream record, dispatches it,
+// puts the result back. The orchestration lives here,
+// not in the handlers it invokes.
 
-function execute (record, dispatch) {
+function execute (record) {
   if (!record.value || record.value.length === 0) {
     return withContext(record, [
       contextHeader('spl.error', 'execute: no inner record in value')

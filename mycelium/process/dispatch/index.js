@@ -4,8 +4,10 @@ const { getStreamDescriptor, contextHeader } = require('../../schema.js')
 // spl.mycelium.process.dispatch
 //
 // Handler registry + dispatch. Read the stream
-// descriptor, route to the handler. Handlers receive
-// dispatch as a parameter for recursion.
+// descriptor, route to the handler.
+// Contract: handler(record) → record.
+// Orchestration (sequencing, pipelines) lives in
+// orchestrator types, not in handlers.
 
 const handlers = {}
 
@@ -28,7 +30,7 @@ function dispatch (record) {
     ])
   }
 
-  return handler(record, dispatch)
+  return handler(record)
 }
 
 function withContext (record, extra) {

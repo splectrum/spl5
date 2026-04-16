@@ -33,7 +33,7 @@ function decodeArgs (desc) {
   }
 }
 
-function get (record, dispatch) {
+function get (record) {
   let desc = getStreamDescriptor(record.headers)
   let args = decodeArgs(desc)
 
@@ -54,14 +54,14 @@ function get (record, dispatch) {
   }
 }
 
-function put (record, dispatch) {
+function put (record) {
   return withContext(record, [
     contextHeader('spl.status', 'completed'),
     contextHeader('spl.op', 'put (stub)')
   ])
 }
 
-function remove (record, dispatch) {
+function remove (record) {
   return withContext(record, [
     contextHeader('spl.status', 'completed'),
     contextHeader('spl.op', 'remove (stub)')
