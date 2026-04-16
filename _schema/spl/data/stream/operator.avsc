@@ -3,6 +3,7 @@
   "name": "operator",
   "namespace": "spl.data.stream",
   "fields": [
-    { "name": "args", "type": ["null", "bytes"], "default": null }
+    { "name": "args", "type": ["null", "bytes"], "default": null },
+    { "name": "value", "type": ["null", "bytes"], "default": null }
   ]
 }

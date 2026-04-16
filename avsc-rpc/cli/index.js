@@ -1,14 +1,15 @@
-const { Buffer, process } = require('./runtime.js')
+const { Buffer, process } = require('../../mycelium/runtime.js')
 const net = require('bare-net')
-const { service } = require('./protocol.js')
+const { service } = require('../protocol.js')
 const {
   StreamRecord,
-  StreamDescriptor,
-  ExecuteContext,
   OperatorBag,
-  encodeHeader
-} = require('./schema.js')
-const { nested } = require('./execute.js')
+  ExecuteContext,
+  streamHeader,
+  typedRef,
+  contextHeader
+} = require('../../mycelium/schema.js')
+const { nested } = require('../display.js')
 
 const PORT = 24950
 
@@ -23,17 +24,19 @@ if (!schema) {
   process.exit(1)
 }
 
-// Build inner operator — the operation being executed
+// Build inner operator
 const innerOp = {
   offset: 0,
   timestamp: Date.now(),
   key: key,
   value: Buffer.alloc(0),
   headers: [
-    encodeHeader('spl.data.stream', StreamDescriptor, { type: schema }),
-    encodeHeader(schema, OperatorBag, {
-      args: args.length ? Buffer.from(JSON.stringify(args)) : null
-    })
+    streamHeader(schema,
+      typedRef('spl.data.stream.operator', OperatorBag, {
+        args: args.length ? Buffer.from(JSON.stringify(args)) : null,
+        value: null
+      })
+    )
   ]
 }
 
@@ -44,13 +47,13 @@ const exec = {
   key: key,
   value: StreamRecord.toBuffer(innerOp),
   headers: [
-    encodeHeader('spl.data.stream', StreamDescriptor, {
-      type: 'spl.mycelium.process.execute'
-    }),
-    encodeHeader('spl.mycelium.process.execute', ExecuteContext, {
-      mode: 'sync'
-    }),
-    { key: 'spl.pov', value: Buffer.from(process.cwd()) }
+    streamHeader('spl.mycelium.process.execute',
+      typedRef('spl.data.mycelium.process.execute', ExecuteContext, {
+        args: null, value: null, mode: 'sync'
+      }),
+      { type: 'spl.data.stream.record', value: StreamRecord.toBuffer(innerOp) }
+    ),
+    contextHeader('spl.pov', process.cwd())
   ]
 }
 

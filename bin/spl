@@ -4,4 +4,4 @@
 # Invocation: spl <schema> [key] [args...]
 SELF="$(readlink -f "$0")"
 DIR="$(cd "$(dirname "$SELF")/.." && pwd)"
-exec bare "$DIR/mycelium/cli.js" "$@"
+exec bare "$DIR/avsc-rpc/cli" "$@"

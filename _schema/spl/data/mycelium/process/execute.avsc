@@ -1,0 +1,10 @@
+{
+  "type": "record",
+  "name": "execute",
+  "namespace": "spl.data.mycelium.process",
+  "fields": [
+    { "name": "args", "type": ["null", "bytes"], "default": null },
+    { "name": "value", "type": ["null", "bytes"], "default": null },
+    { "name": "mode", "type": "string", "default": "sync" }
+  ]
+}

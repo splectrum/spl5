@@ -96,15 +96,14 @@ Neither matched the architecture's principles:
 
 The resolution: headers is a flat list of key-value
 entries. Each entry is a namespace key (string) and a
-data record (bytes).
+data value.
 
 ```
-headers: [{ key: string, value: bytes }]
+headers: [{ key: string, value: ... }]
 ```
 
 The key is a fully qualified namespace path. The value
-is AVRO-encoded data according to the schema that the
-key names.
+is data according to the schema that the key names.
 
 This is the entire mechanism. No fixed fields inside
 headers. No structural constraints on what can be
@@ -175,58 +174,173 @@ vocabulary.
 - `spl.data.stream.record` — the common Kafka record
   schema. What avsc-rpc declares. Every stream record
   has this shape.
-- `spl.data.stream` — the base header descriptor
-  schema. The self-description entry.
+- `spl.data.stream.operator` — the base property bag
+  schema. `args` and `value`.
+- `spl.data.mycelium.process.execute` — specific
+  schema extending the base with `mode`.
 
 The `spl.data` namespace is separate from
 `spl.mycelium` (the fabric), `spl.splectrum` (the
 language layer), and `spl.haicc` (the cognition layer).
 Data schemas are carrier. The namespaces that use them
-are meaning.
+are meaning. The `spl.data` namespace mirrors the
+structure of the namespaces it serves —
+`spl.data.mycelium.process` provides carrier schemas
+for `spl.mycelium.process` stream types.
 
 ---
 
-## The Base Header Descriptor
+## The Stream Descriptor
 
 Every stream record carries an `spl.data.stream` entry
 in its headers. This is the record's self-description
 — the minimum required to get handling started.
 
-The base data record contains at least the **stream
-type** — the functional identity of this record. For
-specific cases, the base can be extended with
-additional fields relevant to stream handling.
+### Resolved, Not Encoded
 
-The `spl.data.stream` entry tells the server: this
-record's stream type is X, and its value contains Y.
-This is the "headers about headers" mechanism — the
-self-description that the Kafka design scope identified
-as an open area.
+The `spl.data.stream` entry is special. Its value is
+not opaque bytes — it is a resolved AVRO record,
+defined as a union branch in the header value type:
+
+```
+header.value: [ bytes | spl.data.stream.descriptor ]
+```
+
+When the header key is `spl.data.stream`, the value is
+the descriptor record — structured, typed, directly
+readable after deserialization. No `fromBuffer()` call,
+no schema lookup. The happy path — dispatch on stream
+type — is zero decoding overhead.
+
+All other header entries use the `bytes` branch and
+are decoded on demand.
+
+### Descriptor Fields
+
+```
+spl.data.stream.descriptor {
+  type:  string                          — the stream type
+  args:  null | { type: string,          — typed input reference
+                  value: bytes }
+  value: null | { type: string,          — typed payload reference
+                  value: bytes }
+}
+```
+
+The `type` field is the stream type name — the
+dispatch key. Always present.
+
+The `args` and `value` fields are typed references —
+each carries a schema name and encoded data. Null
+means not applicable. This is the base property bag
+that every stream type conforms to:
+
+- **Operators** have `args` (input data, method
+  arguments). Value starts null, fills with method
+  output on execution.
+- **Context types** have `args` null (no input data
+  in the operator sense, though the specific schema
+  carries context-specific fields like `mode`). Value
+  references the wrapped inner record.
+- Both patterns use the same base structure. The
+  distinction is usage, not schema.
+
+### Efficient Happy Path
+
+The descriptor is resolved during AVRO deserialization
+of the record itself. The server reads
+`headers[n].value.type` as a plain string — no
+additional decode step. Dispatch is:
+
+1. Deserialize the record (one pass)
+2. Find the `spl.data.stream` entry (list scan)
+3. Read `.type` (it's a string, already there)
+4. Route
+
+Everything beyond this — reading args, decoding the
+inner record, looking up specific schemas — is cold
+path, paid for only when a handler needs it.
 
 ---
 
-## Stream Type as Header Entry
+## The Dual Entry Pattern
 
-The stream type named in the `spl.data.stream`
-descriptor also has its own entry in the headers list.
-Its key is the stream type's fully qualified name.
-Its value is the stream type's property bag — the
-type-specific data.
+A stream record carries its stream type data in two
+header entries:
 
-So a record has at minimum two header entries:
+1. **`spl.data.stream`** — the descriptor. Carries
+   `type`, `args`, `value` in the base schema. This is
+   the data **in context** of the current request.
+   Generic code reads this. It contains exactly the
+   base fields — enough for dispatch, pipeline
+   processing, generic handling.
 
-1. `spl.data.stream` — the descriptor. Says what
-   stream type this record is, what value contains.
-2. The stream type's own key — e.g.,
-   `spl.mycelium.process.execute`. Contains the
-   type-specific property bag (execution mode,
-   arguments, etc.).
+2. **The stream type's own key** — e.g.,
+   `spl.mycelium.process.execute`. Carries the full
+   record for that specific type — base fields plus
+   type-specific fields (like `mode` for execute).
+   This is the data **out of context** — standing on
+   its own, readable by its own specific schema.
 
-Additional entries carry whatever else travels with
-the record — provenance, historical data, applied
-stream types, tracing, debugging context. Each is
-another (key, value) pair. The list grows as the record
-travels through the system.
+The duplication is the point. Two entries, two
+lenses, two consumers:
+
+- **Generic code** reads the base descriptor. Gets
+  `type`, `args`, `value`. Enough to dispatch, route,
+  log, forward. Never needs the specific schema.
+
+- **The handler** reads the specific type's entry.
+  Gets everything — base fields plus `mode`, debug
+  level, or whatever the specific schema defines. Uses
+  AVRO's "readable as" — the specific schema is a
+  superset of the base.
+
+Neither needs to know about the other's schema. The
+base is what the pipeline always needs. The specific
+is what the handler needs. Both are in the same flat
+list. The base is always resolved (zero-cost). The
+specific is decoded on demand.
+
+---
+
+## One Base Schema
+
+All stream type property bags share one base
+structure: `args` and `value`. There is no separate
+schema hierarchy for operators versus contexts. The
+base is:
+
+```
+spl.data.stream.operator {
+  args:  null | bytes
+  value: null | bytes
+}
+```
+
+An operator has args populated, value fills on
+execution. A context has args null, value references
+the wrapped record. A bare passthrough has both null.
+Same schema, different usage patterns. The stream type
+name tells you which pattern applies — not the data
+schema.
+
+Specific types extend the base with additional fields:
+
+```
+spl.data.mycelium.process.execute {
+  args:  null | bytes
+  value: null | bytes
+  mode:  string       — sync, queue, dry-run
+}
+```
+
+Written with the specific schema, readable as the base.
+AVRO's schema resolution handles this natively — a
+reader with fewer fields reads data from a writer with
+more fields. Extra fields are ignored.
+
+Generic code reads everything as the base. Specific
+handlers read their own schema. One write, many reads.
 
 ---
 
@@ -256,63 +370,31 @@ property bag. The wrapper sets the processing mode.
 The operation defines what happens.
 
 The `spl.data.stream` descriptor in the outer record
-declares that value contains a `spl.data.stream.record`.
-The `spl.data.stream` descriptor in the inner record
-declares that value is the data payload (method output).
+declares that value contains a `spl.data.stream.record`
+(through the `value` typed reference). The descriptor
+in the inner record has `value: null` — value is the
+data payload, filled on execution.
 
-Peeling the onion is: read the outer record's value
-as another `spl.data.stream.record`, read its headers,
-find its stream type, decode its property bag.
-
----
-
-## Stream Type Categories
-
-Stream types are not all operators. Different
-categories have different relationships with value
-and different property bag structures:
-
-**Context types** — `spl.mycelium.process.execute`,
-`spl.mycelium.process.debug`. Set the processing mode.
-Value contains the thing being contextualized (another
-stream record). Property bag carries context metadata
-(execution mode, debug level).
-
-**Operator types** — `spl.mycelium.xpath.raw.uri.get`,
-`spl.mycelium.xpath.raw.uri.put`. Follow the method
-signature pattern: args, output. Property bag carries
-`args`. Value starts empty, fills with method output
-on completion. The property bag's data schema defines
-both `args` and `value` — the schema declares what
-value means for this operation, even though value
-lives at the top level of the record.
-
-Value exists at two levels: **unpacked** as the
-top-level record field (this is the data payload in
-motion for this Kafka record), and **in the type
-schema** (logically, the type defines what value
-means). The unpacking is a structural fact — this is
-what's moving. The schema is the semantic fact — this
-is what it means.
-
-More categories will emerge as the architecture needs
-them. The categories are ours to define.
+Peeling the onion is: read the descriptor's `value`
+typed reference, deserialize the bytes as another
+`spl.data.stream.record`, read its descriptor, repeat.
 
 ---
 
 ## Schema Aliasing
 
 A stream type name is a fully qualified namespace path.
-It is also a data schema name — or an alias of one.
-Multiple stream type names can point to the same AVRO
-data schema.
+It maps to an AVRO data schema through the alias
+mapping. Multiple stream type names can point to the
+same data schema.
 
 `spl.mycelium.xpath.raw.uri.get` and
 `spl.mycelium.xpath.raw.uri.put` are different
 operations — different stream types, different
-functional identities. But their property bags may
-have the same structure: both carry args, both use
-value. They alias the same data schema.
+functional identities. But their property bags have
+the same structure: both carry args, both use value.
+They alias the same data schema:
+`spl.data.stream.operator`.
 
 This is the carrier/meaning separation at the schema
 level. The name is the meaning — it identifies the
@@ -320,12 +402,37 @@ operation, the language game, the protocol context.
 The AVRO schema is the carrier — it describes the
 data shape. Many meanings, few carriers.
 
+### The Alias Mapping
+
+All AVRO data schemas live under `spl.data.*` in the
+`_schema` tree as `.avsc` files. Everything outside
+`spl.data.*` is a stream type name that aliases to a
+data schema.
+
+The mapping lives in a single flat file:
+`_schema/alias-mapping.txt`. Two columns — alias name
+and schema name. Loaded once on server start into an
+in-memory map.
+
+```
+spl.mycelium.process.execute       spl.data.mycelium.process.execute
+spl.mycelium.process.debug         spl.data.mycelium.process.execute
+spl.mycelium.xpath.raw.uri.get     spl.data.stream.operator
+spl.mycelium.xpath.raw.uri.put     spl.data.stream.operator
+spl.mycelium.xpath.raw.uri.remove  spl.data.stream.operator
+```
+
+No directory tree for aliases. No individual alias
+files. The mapping is a single fact, easy to read,
+easy to update. The `_schema` filesystem tree only
+holds actual `.avsc` schema definitions under
+`spl/data/`.
+
 ### Consequences
 
 **The namespace grows freely.** Creating a new
-operation, a new stream type, a new protocol — in
-most cases you create an alias, a new name pointing
-to an existing data schema. The meaning space is
+operation, a new stream type, a new protocol — add a
+line to the alias mapping. The meaning space is
 combinatorial. The structural vocabulary stays tight.
 
 **New data schemas are the exception.** A new schema
@@ -336,22 +443,63 @@ creating meaning (new namespace path), not carrier
 
 **Aliases can be switched.** A stream type can be
 repointed to a different data schema without changing
-the namespace identity. This makes the structure
-flexible — the mapping between name and schema is a
-fact in the fabric, not a compile-time binding.
+the namespace identity. Change one line in the mapping.
 
-**Self-discovery works through aliases.** Enumerating
-the header keys on a record gives you a list of
-namespace paths. Each path names a schema (directly
-or through alias). The schemas present on the record
-are discoverable by reading the keys. No external
-registry needed.
+**AVRO's native aliases complement this.** AVRO's
+`aliases` field on a schema definition handles the
+reverse direction — the schema declares what names it
+can be read as. This is used during schema evolution
+(writer/reader resolution). The alias mapping file
+handles the forward direction — given a name, find the
+schema. Both directions are needed.
+
+---
+
+## The Local Schema Registry
+
+Schemas live in `_schema` on the repo root node.
+Underscore prefix — it is metadata. The node carries
+its own type vocabulary.
+
+```
+_schema/
+  alias-mapping.txt
+  spl/data/
+    stream/
+      record.avsc
+      descriptor.avsc
+      operator.avsc
+    mycelium/
+      process/
+        execute.avsc
+```
+
+Reality is local. Each repository has its own schema
+registry. What types a subject reality can speak is
+determined by what schemas are present in its `_schema`
+tree.
+
+- **Self-contained.** Lift the repo, the schemas
+  travel with it. No external registry dependency.
+- **Discoverable.** Walk the tree to find what schemas
+  exist. Read `alias-mapping.txt` to find what stream
+  types are available.
+- **Cascading.** A child node could carry its own
+  `_schema` that overrides or extends the root's
+  schemas. Protocol resolution on the ancestor axis
+  finds the nearest `_schema` entry. Same mechanism as
+  everything else.
+
+The loader reads `.avsc` files by namespace path,
+checks the alias mapping for stream type names, and
+caches parsed types. Schemas are loaded on demand and
+kept in memory.
 
 ---
 
 ## The Common Record Schema
 
-The AVRO schema declared to avsc-rpc is simple:
+The AVRO schema declared to avsc-rpc:
 
 ```
 spl.data.stream.record {
@@ -359,92 +507,97 @@ spl.data.stream.record {
   timestamp: long
   key:       string
   value:     bytes    (default empty)
-  headers:   array of {
+  headers:   array of spl.data.stream.header {
     key:   string
-    value: bytes
+    value: [ bytes | spl.data.stream.descriptor {
+      type:  string
+      args:  null | spl.data.stream.typed {
+        type:  string
+        value: bytes
+      }
+      value: null | spl.data.stream.typed
+    }]
   }
 }
 ```
 
-This is the one schema the RPC server knows. Every
-stream record conforms to it. Everything else — stream
-types, property bags, context, provenance — lives
-inside the headers entries as AVRO-encoded bytes,
-decoded per-key using the schema the key names.
-
-The common schema carries everything without knowing
-what's inside. The headers are opaque to the transport.
-Meaning is resolved at the handling level, not the
-transport level.
+One schema. Headers is a flat list. The descriptor is
+a union branch — resolved during deserialization.
+Everything else is bytes, decoded on demand.
 
 ---
 
 ## The RPC Server's Job
 
 1. Receive a record (`spl.data.stream.record`)
-2. Read headers, find the `spl.data.stream` entry
-3. Decode it — learn the stream type and what value
-   contains
-4. Find the stream type's own header entry
-5. Decode the property bag using the stream type's
-   schema
-6. Dispatch on the stream type name
-7. If the type is a context wrapper and value contains
-   another `spl.data.stream.record` — peel and recurse
+2. Find the `spl.data.stream` header entry
+3. Read `.type` — already a string, zero-cost
+4. Dispatch on the stream type name
+5. If the handler needs specifics: find the type's
+   own header entry, decode with the specific schema
+6. If value contains another record: peel and recurse
 
 ---
 
 ## What This Design Resolves
 
 **Header self-description** — the open area from the
-Kafka design scope. The `spl.data.stream` entry is the
-self-description mechanism. It tells you what the
-record is and what value contains.
+Kafka design scope. The `spl.data.stream` descriptor
+is the self-description mechanism. It tells you what
+the record is and what its args and value contain.
 
 **Fixed vs flexible headers** — resolved in favour of
 the open list. No fixed fields, no structural
-constraints. The base descriptor provides the minimum.
+constraints. The descriptor provides the minimum.
 Everything else is additional entries.
 
-**Dispatch mechanism** — the stream type in the
-`spl.data.stream` entry is the dispatch key. One path,
-one mechanism, every message.
+**Dispatch efficiency** — the descriptor is resolved
+during deserialization. The happy path is zero
+additional decoding.
 
-**Schema management** — aliasing keeps the data schema
-count small while the namespace of stream types grows
-freely. Self-discovery through key enumeration removes
-the need for a registry.
+**Dispatch mechanism** — the stream type in the
+descriptor is the dispatch key. One path, one
+mechanism, every message.
+
+**Base vs specific schemas** — one base schema for all
+stream types (`args`, `value`). Specific schemas
+extend with additional fields. AVRO resolution handles
+the many-reads pattern.
+
+**The dual entry** — base descriptor for generic
+handling, type-specific entry for handler-specific
+data. Data in context and data out of context, in the
+same flat list.
+
+**Schema management** — data schemas under `spl.data`,
+alias mapping for everything else. The `_schema` tree
+on the repo root is the local registry. Reality is
+local.
 
 **The onion** — preserved as nesting. Context wraps
 operation. Both are `spl.data.stream.record`. The
-descriptor declares what value contains. Peeling is
-decoding.
+descriptor's typed references declare what value
+contains. Peeling is deserialization.
 
 ---
 
 ## Open Areas
-
-**Base descriptor fields** — the `spl.data.stream`
-data record needs its minimum fields defined. Stream
-type is certain. Value content declaration is certain.
-What else belongs in the base?
-
-**Operator base schema** — the pattern of `args` and
-`value` as reserved fields for operator-type stream
-types. Does this become a formal base schema that
-operator property bags extend? Or is it a convention?
-
-**Schema resolution** — how does the server obtain the
-schema for a given header key? Schemas are facts in
-the fabric — discoverable through traversal. But the
-RPC server needs them at message-handling time. How
-are they made available?
 
 **Context accumulation** — as a record travels, it
 accumulates header entries. How is ordering preserved?
 Can entries be overwritten, or are they append-only?
 Does the processing pipeline add entries or modify
 existing ones?
+
+**Schema cascading** — child nodes with their own
+`_schema` overriding the root's schemas. The mechanism
+is clear (ancestor axis resolution) but the
+implementation is future work.
+
+**Alias entry repetition** — the stream type's own
+header entry alongside the base descriptor. The design
+is resolved (data in context vs out of context) but the
+implementation is deferred until we need it.
 
 ---
 

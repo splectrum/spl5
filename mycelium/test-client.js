@@ -1,12 +1,21 @@
 const { Buffer, process } = require('./runtime.js')
 const {
   StreamRecord,
-  StreamDescriptor,
-  ExecuteContext,
   OperatorBag,
-  encodeHeader
+  ExecuteContext,
+  streamHeader,
+  typedRef,
+  contextHeader
 } = require('./schema.js')
-const { execute, nested } = require('./execute.js')
+const { dispatch, register } = require('./process/dispatch')
+const { nested } = require('../avsc-rpc/display.js')
+
+// Register handlers
+register('spl.mycelium.process.execute', require('./process/execute'))
+const rawuri = require('./xpath/raw/uri')
+register('spl.mycelium.xpath.raw.uri.get', rawuri.get)
+register('spl.mycelium.xpath.raw.uri.put', rawuri.put)
+register('spl.mycelium.xpath.raw.uri.remove', rawuri.remove)
 
 // Inner operator: spl.mycelium.xpath.raw.uri.get
 const innerOp = {
@@ -15,16 +24,15 @@ const innerOp = {
   key: '/blog/submissions',
   value: Buffer.alloc(0),
   headers: [
-    encodeHeader('spl.data.stream', StreamDescriptor, {
-      type: 'spl.mycelium.xpath.raw.uri.get'
-    }),
-    encodeHeader('spl.mycelium.xpath.raw.uri.get', OperatorBag, {
-      args: Buffer.from(JSON.stringify([[{ key: '/blog/submissions' }]]))
-    })
+    streamHeader('spl.mycelium.xpath.raw.uri.get',
+      typedRef('spl.data.stream.operator', OperatorBag, {
+        args: Buffer.from(JSON.stringify([[{ key: '/blog/submissions' }]])),
+        value: null
+      })
+    )
   ]
 }
 
-// Serialize inner operator — the onion
 const innerBytes = StreamRecord.toBuffer(innerOp)
 
 // Execution context wrapping the inner operator
@@ -34,20 +42,20 @@ const exec = {
   key: '/blog/submissions',
   value: innerBytes,
   headers: [
-    encodeHeader('spl.data.stream', StreamDescriptor, {
-      type: 'spl.mycelium.process.execute'
-    }),
-    encodeHeader('spl.mycelium.process.execute', ExecuteContext, {
-      mode: 'sync'
-    }),
-    { key: 'spl.pov', value: Buffer.from(process.cwd()) }
+    streamHeader('spl.mycelium.process.execute',
+      typedRef('spl.data.mycelium.process.execute', ExecuteContext, {
+        args: null, value: null, mode: 'sync'
+      }),
+      { type: 'spl.data.stream.record', value: innerBytes }
+    ),
+    contextHeader('spl.pov', process.cwd())
   ]
 }
 
 console.log('--- REQUEST ---')
 console.log(JSON.stringify(nested(exec), null, 2))
 
-const response = execute(exec)
+const response = dispatch(exec)
 
 console.log('\n--- RESPONSE ---')
 console.log(JSON.stringify(nested(response), null, 2))

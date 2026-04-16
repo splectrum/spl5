@@ -1,5 +1,0 @@
-{
-  "get": "spl.data.stream.operator",
-  "put": "spl.data.stream.operator",
-  "remove": "spl.data.stream.operator"
-}

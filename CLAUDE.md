@@ -21,8 +21,9 @@ One source of truth — don't keep copies elsewhere.
 
 spl5 is the prototyping iteration. Its mission is to
 prove the mycelium fabric architecture end-to-end:
-AVRO RPC server, Kafka-native message shape, fabric
-APIs, CLI as subject, and the namespace/node structure.
+AVRO RPC server, Kafka-native stream record shape,
+fabric APIs, CLI as subject, and the namespace/node
+structure.
 
 ## How We Work
 
@@ -45,51 +46,94 @@ collaborative — scope, meaning, design, direction.
 
 ## Codebase Structure
 
+Namespace-mapped layout. Directory = namespace node.
+`index.js` = code for that name. Other files =
+auxiliary.
+
 ```
-bin/          — entry point scripts (spl, spl-server, setup)
-docs/         — policy (DEPENDENCIES.md), schema (MESSAGE.md)
-lib/          — all dependencies
-  avsc/       — AVRO types/serialization (constitutive, subtree)
-  avsc-rpc/   — AVRO RPC protocol (constitutive, subtree)
-  bare-*/     — platform deps (gitignored, populated by bin/setup)
-mycelium/     — runtime code (fabric namespace)
+avsc-rpc/             — spl.avsc-rpc (RPC layer)
+  protocol.js         — RPC protocol definition
+  display.js          — human-readable rendering
+  server/index.js     — RPC server, TCP, handler registration
+  cli/index.js        — CLI client
+
+mycelium/             — spl.mycelium (fabric)
+  runtime.js          — Bare runtime essentials
+  resolve.js          — repo root resolution
+  schema.js           — schema loader + helpers
+  test-client.js      — in-memory test script
+  process/            — spl.mycelium.process
+    dispatch/index.js — handler registry + dispatch
+    execute/index.js  — execution context (peel onion)
+  xpath/              — spl.mycelium.xpath
+    raw/
+      uri/index.js    — get/put/remove operators (stubs)
+
+_schema/              — local schema registry (metadata)
+  alias-mapping.txt   — stream type → data schema
+  spl/data/           — AVRO data schemas (.avsc)
+
+_server/              — server instance (logs, state)
+bin/                  — entry points (spl, spl-server, setup)
+lib/                  — all dependencies
+  avsc/              — AVRO types/serialization (subtree)
+  avsc-rpc/          — AVRO RPC protocol (subtree)
+  bare-*/            — platform deps (gitignored)
+docs/                — schema reference, design submissions
 ```
 
 - **Bare only** — no Node.js, no dual-runtime
 - **node_modules → lib/** symlink for all module resolution
 - **bin/spl** — global CLI, symlinked to ~/.local/bin
 - **bin/spl-server** — RPC server, system service
-- **bin/setup** — populates platform deps from npm (prebuilds only)
+- **bin/setup** — populates platform deps from npm
 
 ## What Works
 
-- AVRO message schema (Kafka record shape, the onion)
+- Stream record schema (spl.data.stream.record)
+  with resolved descriptor union in headers
+- Stream type dispatch: process.execute peels onion,
+  xpath.raw.uri.get/put/remove stubs
 - AVRO RPC protocol over TCP on Bare
-- Global CLI: `spl <schema> [key] [args...]` from anywhere
-- Server resolves repo root from caller's cwd (ancestor axis)
+- Global CLI: `spl <schema> [key] [args...]`
+- Local schema registry: _schema with .avsc files
+  and alias-mapping.txt
 - In-memory pipeline (test-client.js)
 
 ## POC Sequence
 
 1. ~~AVRO RPC server with spl.cli.execute message~~ ✓
 2. ~~CLI submitting to server~~ ✓
-3. rawuri (get/put/remove) through the RPC chain
-   — needs headers/dispatch design discussion first
-4. Register rawuri on repo root node
-5. Protocol resolution in cli.execute
-6. Expand: datauri, metadatauri, learn from prototype
+3. ~~Stream record redesign: headers, stream types,
+   dispatch, schema registry~~ ✓
+4. rawuri (get/put/remove) implementation
+5. Register rawuri on repo root node
+6. Protocol resolution in cli.execute
+7. Expand: datauri, metadatauri, learn from prototype
 
 ## Key Design Decisions
 
-- Kafka record message shape (timestamp, key, value,
-  headers) for everything
+- Kafka record stream shape: offset, timestamp, key,
+  value, headers (open key-value list)
+- Stream descriptor resolved in header union — zero
+  decode dispatch on happy path
+- Stream types: functional identity in motion. Dispatch
+  on headers.stream.type
+- Dual header entry: base descriptor for generic code,
+  type-specific entry for handlers (future)
+- One base property bag schema (args + value), specific
+  types extend it. AVRO "readable as" handles many reads
+- Schema aliasing: stream type names alias to spl.data
+  schemas via alias-mapping.txt
+- _schema on repo root = local schema registry.
+  Reality is local
+- spl.data namespace for AVRO data schemas (carrier).
+  Other namespaces for meaning (stream types)
+- Namespace-mapped code layout: directory = node,
+  index.js = code, other files = auxiliary
 - Six fabric APIs (datauri/metadatauri/rawuri +
   data/metadata/raw)
 - Underscore prefix as metadata dimension boundary
-- AVRO "readable as" — no strict signatures
-- Single identifier system across all dimensions
 - Node self-containment for lift-and-shift portability
-- Transport classes use streamx.Transform directly
-  (not bare-stream wrapper — object-mode compat)
 - Constitutive deps as git subtrees in lib/
 - Platform deps gitignored, populated by bin/setup

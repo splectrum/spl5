@@ -1,0 +1,6 @@
+spl.mycelium.process.dispatch	spl.data.stream.operator
+spl.mycelium.process.execute	spl.data.mycelium.process.execute
+spl.mycelium.process.debug	spl.data.mycelium.process.execute
+spl.mycelium.xpath.raw.uri.get	spl.data.stream.operator
+spl.mycelium.xpath.raw.uri.put	spl.data.stream.operator
+spl.mycelium.xpath.raw.uri.remove	spl.data.stream.operator
