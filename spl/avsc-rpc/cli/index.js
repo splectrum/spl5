@@ -20,25 +20,32 @@ const PORT = 24950
 
 // --- Context Resolution ---
 
-let contextMap = null
+let contextCache = {}
 
-function loadContext (repo) {
-  if (contextMap) return contextMap
-  contextMap = {}
-  let file = path.join(repo, '_client', 'context.txt')
-  if (!fs.existsSync(file)) return contextMap
-  let text = fs.readFileSync(file, 'utf-8')
+function loadContext (contextPath) {
+  if (contextCache[contextPath]) return contextCache[contextPath]
+  let map = {}
+  if (!fs.existsSync(contextPath)) return map
+  let text = fs.readFileSync(contextPath, 'utf-8')
   for (let line of text.split('\n')) {
     line = line.trim()
     if (!line || line.startsWith('#')) continue
     let parts = line.split(/\s+/)
-    if (parts.length >= 2) contextMap[parts[0]] = parts[1]
+    if (parts.length >= 2) map[parts[0]] = parts[1]
   }
-  return contextMap
+  contextCache[contextPath] = map
+  return map
 }
 
-function resolveSchema (name, repo) {
-  let map = loadContext(repo)
+// Check if a name is a client identity: _<name>/_client/context.txt exists
+function resolveClientIdentity (name, repo) {
+  let contextFile = path.join(repo, '_' + name, '_client', 'context.txt')
+  if (fs.existsSync(contextFile)) return contextFile
+  return null
+}
+
+function resolveSchema (name, contextFile) {
+  let map = loadContext(contextFile)
   return map[name] || name
 }
 
@@ -127,29 +134,14 @@ function printData (data, type) {
 
 // --- Parse Arguments ---
 //
-// spl [raw|meta] <command> [key] [value] [args...]
+// spl [identity] [modifier] <command> [key] [value] [args...]
 //
-// raw modifier: raw protocol + suppresses extraction
-// meta modifier: metadata protocol + extracted output
+// identity: client identity (_<name>/_client/context.txt)
+// modifier: raw (raw protocol + no extraction), meta
+// command:  resolved from active context
 
 const argv = typeof Bare !== 'undefined' ? Bare.argv.slice(2) : []
 const modifiers = { raw: true, meta: true }
-let modifier = null
-let argStart = 0
-
-if (argv[0] && modifiers[argv[0]]) {
-  modifier = argv[0]
-  argStart = 1
-}
-
-const command = argv[argStart]
-const key = argv[argStart + 1] || ''
-const args = argv.slice(argStart + 2)
-
-if (!command) {
-  console.error('usage: spl [modifier] <command> [key] [value] [args...]')
-  process.exit(1)
-}
 
 const cwd = process.cwd()
 const repo = repoRoot(cwd)
@@ -159,9 +151,46 @@ if (!repo) {
   process.exit(1)
 }
 
+// Resolve: identity → modifier → command
+let clientContext = null
+let modifier = null
+let argStart = 0
+
+// 1. Client identity?
+if (argv[0]) {
+  clientContext = resolveClientIdentity(argv[0], repo)
+  if (clientContext) argStart = 1
+}
+
+// 2. Modifier?
+if (argv[argStart] && modifiers[argv[argStart]]) {
+  modifier = argv[argStart]
+  argStart++
+}
+
+const command = argv[argStart]
+const key = argv[argStart + 1] || ''
+const args = argv.slice(argStart + 2)
+
+if (!command) {
+  console.error('usage: spl [identity] [modifier] <command> [key] [value] [args...]')
+  process.exit(1)
+}
+
 const local = '/' + path.relative(repo, cwd)
-const contextKey = modifier ? modifier + '.' + command : command
-const schema = resolveSchema(contextKey, repo)
+
+// Default context if no client identity matched
+if (!clientContext) {
+  clientContext = path.join(repo, '_client', 'context.txt')
+}
+
+// Resolve command: modifier prefixes short names only.
+// Full stream types (spl.*) pass through unmodified.
+let contextKey = command
+if (modifier && !command.startsWith('spl.')) {
+  contextKey = modifier + '.' + command
+}
+const schema = resolveSchema(contextKey, clientContext)
 
 // Build inner operator
 const innerOp = {
