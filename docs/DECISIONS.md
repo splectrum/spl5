@@ -470,3 +470,51 @@ extraction. No mocking, no shortcuts.
 **Why:** Mock tests can pass while the real system
 fails. The test harness exercises the same path as
 the user. If the test passes, the feature works.
+
+### lib/rpc-server — server infrastructure module
+
+Extracted server lifecycle from spl/avsc-rpc/server to
+lib/rpc-server. Same pattern as lib/git: infrastructure
+in lib/, thin protocol layer (~20 lines) in spl/.
+
+Module provides: start, stop, restart, isRunning. PID
+file for process identity. File-based command IPC via
+_server/cmd/ watcher (drop `shutdown` or `restart`
+file). Request logging with pluggable renderer.
+
+The protocol layer (spl/avsc-rpc/server/index.js) wires
+the avsc-rpc service and dispatch to the infrastructure
+via `onConnection` callback. lib/rpc-server knows nothing
+about AVRO or dispatch.
+
+**Why:** The server was a monolith mixing TCP lifecycle,
+logging, and dispatch. No clean shutdown, no PID
+tracking. Every session required manual pkill. The
+extraction gives lifecycle management without coupling
+to the protocol layer.
+
+### File-based command IPC over signals
+
+Server watches _server/cmd/ for command files. External
+tools write an empty file (e.g., `shutdown`) to trigger
+server actions. The file is consumed (deleted) after
+processing.
+
+**Replaces:** nothing — there was no shutdown mechanism.
+
+**Why:** No new platform dependencies (bare-signals not
+needed). Works on all platforms. Debuggable: `ls
+_server/cmd/` shows pending commands. `touch
+_server/cmd/shutdown` from any shell. Self-documenting.
+
+### PID file for server identity
+
+Server writes Bare.pid to `_server/pid` on start,
+removes on clean shutdown. `pid.alive()` checks if
+the PID is still running via `os.kill(pid, 0)`. Stale
+PID files (crashed process) are detected and overwritten
+on next start.
+
+**Why:** Standard Unix pattern. Enables instant server
+detection without TCP overhead. Test runner uses it
+for server check before running suites.

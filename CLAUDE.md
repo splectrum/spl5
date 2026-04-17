@@ -55,7 +55,7 @@ spl/                  — spl namespace root (lib/spl symlink)
   avsc-rpc/           — spl.avsc.rpc (RPC layer)
     protocol.js       — RPC protocol definition
     display.js        — human-readable rendering
-    server/index.js   — RPC server, TCP transport
+    server/index.js   — thin protocol layer on lib/rpc-server
     cli/index.js      — CLI client, multi-client identity
   mycelium/           — spl.mycelium (fabric)
     runtime.js        — Bare runtime essentials
@@ -100,7 +100,7 @@ _test/                — test framework (subtree: spl5.test)
   resources/          — test fixtures
   harness.js          — spl executor + assertions
   runner.js           — suite loader + reporter
-_server/              — server instance (logs, state)
+_server/              — server instance (pid, logs, cmd/)
 .gittrees             — subtree prefix → remote → branch
 
 bin/                  — entry points
@@ -113,6 +113,7 @@ lib/                  — dependencies
   avsc/              — AVRO types (subtree: bare-for-pear/avsc)
   avsc-rpc/          — AVRO RPC (subtree: bare-for-pear/avsc-rpc)
   git/               — git operations (subtree: bare-for-pear/git)
+  rpc-server/        — server lifecycle, PID, IPC, logging
   spl -> ../spl      — namespace require symlink
   bare-*/            — platform deps (gitignored)
 
@@ -128,6 +129,9 @@ docs/                — DECISIONS.md, design submissions
 ## What Works
 
 - AVRO RPC server + CLI over TCP on Bare
+- lib/rpc-server: server lifecycle (start/stop/restart),
+  PID file, file-based command IPC (_server/cmd/),
+  request logging
 - Stream record with resolved descriptor union in headers
 - Dispatch from namespace path (no registration)
 - Execute handler: peel onion, pack at boundary
@@ -155,7 +159,7 @@ docs/                — DECISIONS.md, design submissions
   plain object if already unpacked
 - / means local root, paths resolve forward only
 - Handlers are thin — infrastructure in lib/, protocol
-  in spl/. Same pattern for git, rpc-server (planned)
+  in spl/. Same pattern for git, rpc-server
 - Client owns its language — context mappings translate
   to stream types. Identity travels with subject reality
 
@@ -174,19 +178,7 @@ docs/                — DECISIONS.md, design submissions
 
 ## Roadmap
 
-### Next: lib/rpc-server — server infrastructure module
-
-Extract server lifecycle from spl/avsc-rpc/server to
-lib/rpc-server. Same pattern as lib/git: infrastructure
-in lib/, thin protocol layer in spl/.
-
-- Server lifecycle: start, stop, restart
-- File-based command IPC: _server/cmd/ watcher
-  (drop `shutdown`, `restart` files)
-- Request logging (currently in server handler)
-- Test runner integration (auto-start, auto-shutdown)
-
-### Pending: context stream types
+### Next: context stream types
 
 Context registration layer. Three mapping concerns:
 1. Data schema (alias-mapping.txt — done)
@@ -199,9 +191,7 @@ Versioning as stream type internal concern.
 ### Identified improvements
 
 - Test runner: auto-start/stop server for test runs
-- CLAUDE.md: update codebase structure section
-- docs/DECISIONS.md: document lib/git, multi-client,
-  response type header decisions
+- docs/DECISIONS.md: document lib/rpc-server decisions
 
 ## Key Design Decisions
 
