@@ -67,6 +67,17 @@ function readableContent (msg) {
     return nested(StreamRecord.fromBuffer(msg.value))
   } catch (e) { /* not a stream record */ }
 
+  // Try response type header if available
+  if (msg.headers) {
+    let typeEntry = msg.headers.find(h => h.key === 'spl.data.response.type')
+    if (typeEntry) {
+      let typeName = Buffer.isBuffer(typeEntry.value)
+        ? str(typeEntry.value) : String(typeEntry.value)
+      let decoded = tryDecode(typeName, msg.value)
+      if (decoded) return decoded
+    }
+  }
+
   // Try as node record (rawuri response)
   try {
     return readableValue(NodeRecord.fromBuffer(msg.value))

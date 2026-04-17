@@ -19,3 +19,15 @@ spl.mycelium.xpath.data.remove	spl.data.stream.operator
 spl.mycelium.xpath.metadata.get	spl.data.stream.operator
 spl.mycelium.xpath.metadata.put	spl.data.stream.operator
 spl.mycelium.xpath.metadata.remove	spl.data.stream.operator
+spl.mycelium.git.status	spl.data.stream.operator
+spl.mycelium.git.log	spl.data.stream.operator
+spl.mycelium.git.diff	spl.data.stream.operator
+spl.mycelium.git.add	spl.data.stream.operator
+spl.mycelium.git.commit	spl.data.stream.operator
+spl.mycelium.git.push	spl.data.stream.operator
+spl.mycelium.git.pull	spl.data.stream.operator
+spl.mycelium.git.subtree.list	spl.data.stream.operator
+spl.mycelium.git.subtree.register	spl.data.stream.operator
+spl.mycelium.git.subtree.pull	spl.data.stream.operator
+spl.mycelium.git.subtree.push	spl.data.stream.operator
+spl.mycelium.git.subtree.add	spl.data.stream.operator

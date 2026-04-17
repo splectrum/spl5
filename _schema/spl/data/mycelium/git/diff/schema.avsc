@@ -1,0 +1,11 @@
+{
+  "type": "record",
+  "name": "diff",
+  "namespace": "spl.data.mycelium.git",
+  "fields": [
+    { "name": "content", "type": "string" },
+    { "name": "filesChanged", "type": "int", "default": 0 },
+    { "name": "insertions", "type": "int", "default": 0 },
+    { "name": "deletions", "type": "int", "default": 0 }
+  ]
+}

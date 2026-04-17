@@ -1,0 +1,24 @@
+{
+  "type": "record",
+  "name": "subtree",
+  "namespace": "spl.data.mycelium.git",
+  "fields": [
+    {
+      "name": "entries",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "subtree_entry",
+          "namespace": "spl.data.mycelium.git",
+          "fields": [
+            { "name": "prefix", "type": "string" },
+            { "name": "remote", "type": "string" },
+            { "name": "branch", "type": "string" },
+            { "name": "url", "type": ["null", "string"], "default": null }
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -34,3 +34,13 @@ meta.remove spl.mycelium.xpath.metadata.remove
 meta.uri.get    spl.mycelium.xpath.metadata.uri.get
 meta.uri.put    spl.mycelium.xpath.metadata.uri.put
 meta.uri.remove spl.mycelium.xpath.metadata.uri.remove
+
+# git
+git.status          spl.mycelium.git.status
+git.log             spl.mycelium.git.log
+git.diff            spl.mycelium.git.diff
+git.add             spl.mycelium.git.add
+git.commit          spl.mycelium.git.commit
+git.push            spl.mycelium.git.push
+git.pull            spl.mycelium.git.pull
+git.subtree.list    spl.mycelium.git.subtree.list

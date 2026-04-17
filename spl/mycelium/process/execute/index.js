@@ -1,13 +1,26 @@
 const { Buffer } = require('spl/mycelium/runtime')
-const { StreamRecord, ExecuteContext, NodeRecord, contextHeader, findHeader } = require('spl/mycelium/schema')
+const { StreamRecord, ExecuteContext, NodeRecord, contextHeader, findHeader, loadSchema } = require('spl/mycelium/schema')
 const { dispatch, withContext } = require('spl/mycelium/process/dispatch')
 
+const RESPONSE_TYPE_KEY = 'spl.data.response.type'
+
 // Pack a value for boundary crossing.
-// Plain objects → AVRO bytes via NodeRecord schema.
-// Buffers pass through.
-function packValue (val) {
+// If the handler set a response type header, use that schema.
+// Otherwise try NodeRecord. Buffers pass through.
+function packValue (val, headers) {
   if (val === null || val === undefined) return Buffer.alloc(0)
   if (Buffer.isBuffer(val) || val instanceof Uint8Array) return val
+
+  let typeEntry = findHeader(headers, RESPONSE_TYPE_KEY)
+  if (typeEntry) {
+    let typeName = Buffer.isBuffer(typeEntry.value)
+      ? typeEntry.value.toString() : String(typeEntry.value)
+    try {
+      let schema = loadSchema(typeName)
+      return schema.toBuffer(val)
+    } catch (e) { /* fall through */ }
+  }
+
   try { return NodeRecord.toBuffer(val) }
   catch (e) { return Buffer.alloc(0) }
 }
@@ -63,7 +76,7 @@ function execute (record) {
   let result = dispatch(inner)
 
   // Pack for boundary crossing
-  let packedValue = packValue(result.value)
+  let packedValue = packValue(result.value, result.headers)
   let packedHeaders = result.headers.map(h => {
     if (h.key === EXEC_KEY && typeof h.value === 'object' && !Buffer.isBuffer(h.value)) {
       return { key: h.key, value: ExecuteContext.toBuffer(h.value) }

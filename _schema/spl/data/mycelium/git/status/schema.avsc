@@ -1,0 +1,25 @@
+{
+  "type": "record",
+  "name": "status",
+  "namespace": "spl.data.mycelium.git",
+  "fields": [
+    { "name": "branch", "type": "string" },
+    { "name": "reality", "type": "string", "default": "repo" },
+    {
+      "name": "files",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "file_status",
+          "namespace": "spl.data.mycelium.git",
+          "fields": [
+            { "name": "status", "type": "string" },
+            { "name": "path", "type": "string" }
+          ]
+        }
+      }
+    },
+    { "name": "clean", "type": "boolean" }
+  ]
+}

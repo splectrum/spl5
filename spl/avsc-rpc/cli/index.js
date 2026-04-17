@@ -10,7 +10,8 @@ const {
   NodeRecord,
   streamHeader,
   encodedHeader,
-  findHeader
+  findHeader,
+  loadSchema
 } = require('spl/mycelium/schema')
 const { repoRoot } = require('spl/mycelium/resolve')
 const { nested } = require('spl/avsc-rpc/display')
@@ -47,12 +48,12 @@ const decoder = new TextDecoder()
 
 function extractResponse (response) {
   if (!response.value || response.value.length === 0) {
-    return { error: null, node: null }
+    return { error: null, node: null, data: null }
   }
 
   let inner
   try { inner = StreamRecord.fromBuffer(response.value) }
-  catch (e) { return { error: 'cannot decode response', node: null } }
+  catch (e) { return { error: 'cannot decode response', node: null, data: null } }
 
   // Check for errors in inner headers
   let errEntry = findHeader(inner.headers, 'spl.error')
@@ -60,19 +61,31 @@ function extractResponse (response) {
     let msg = Buffer.isBuffer(errEntry.value)
       ? decoder.decode(errEntry.value)
       : String(errEntry.value)
-    return { error: msg, node: null }
+    return { error: msg, node: null, data: null }
   }
 
-  // Decode node record from inner value
   if (!inner.value || inner.value.length === 0) {
-    return { error: null, node: null }
+    return { error: null, node: null, data: null }
   }
 
+  // Check for response type header — typed response
+  let typeEntry = findHeader(inner.headers, 'spl.data.response.type')
+  if (typeEntry) {
+    let typeName = Buffer.isBuffer(typeEntry.value)
+      ? decoder.decode(typeEntry.value) : String(typeEntry.value)
+    try {
+      let schema = loadSchema(typeName)
+      let data = schema.fromBuffer(inner.value)
+      return { error: null, node: null, data, type: typeName }
+    } catch (e) { /* fall through to NodeRecord */ }
+  }
+
+  // Default: NodeRecord
   let node
   try { node = NodeRecord.fromBuffer(inner.value) }
-  catch (e) { return { error: null, node: null } }
+  catch (e) { return { error: null, node: null, data: null } }
 
-  return { error: null, node }
+  return { error: null, node, data: null }
 }
 
 function printNode (node) {
@@ -90,6 +103,25 @@ function printNode (node) {
         : String(node.value.contents)
       console.log(text)
     }
+  }
+}
+
+function printData (data, type) {
+  if (type === 'spl.data.mycelium.git.status') {
+    if (data.clean) { console.log(data.branch + ' clean'); return }
+    console.log(data.branch + (data.reality === 'subtree' ? ' (subtree)' : ''))
+    for (let f of data.files) console.log('  ' + f.status + ' ' + f.path)
+  } else if (type === 'spl.data.mycelium.git.log') {
+    for (let e of data.entries) console.log(e.hash.slice(0, 7) + ' ' + e.message)
+  } else if (type === 'spl.data.mycelium.git.diff') {
+    if (data.content) console.log(data.content)
+    else console.log('no changes')
+  } else if (type === 'spl.data.mycelium.git.subtree') {
+    for (let e of data.entries) {
+      console.log(e.prefix + '\t' + e.remote + '\t' + e.branch + (e.url ? '\t' + e.url : ''))
+    }
+  } else {
+    console.log(JSON.stringify(data, null, 2))
   }
 }
 
@@ -185,12 +217,13 @@ client.execute(exec, function (err, response) {
   if (modifier === 'raw') {
     console.log(JSON.stringify(nested(response), null, 2))
   } else {
-    let { error, node } = extractResponse(response)
+    let { error, node, data, type } = extractResponse(response)
     if (error) {
       console.error('spl: ' + error)
       process.exit(1)
     }
-    if (node) printNode(node)
+    if (data) printData(data, type)
+    else if (node) printNode(node)
   }
 
   con.end()

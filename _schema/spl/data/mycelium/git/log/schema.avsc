@@ -1,0 +1,24 @@
+{
+  "type": "record",
+  "name": "log",
+  "namespace": "spl.data.mycelium.git",
+  "fields": [
+    {
+      "name": "entries",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "log_entry",
+          "namespace": "spl.data.mycelium.git",
+          "fields": [
+            { "name": "hash", "type": "string" },
+            { "name": "author", "type": "string" },
+            { "name": "timestamp", "type": "long" },
+            { "name": "message", "type": "string" }
+          ]
+        }
+      }
+    }
+  ]
+}
