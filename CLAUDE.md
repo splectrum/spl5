@@ -51,47 +51,72 @@ Namespace-mapped layout. Directory = namespace node.
 auxiliary. Schema directories use `schema.avsc`.
 
 ```
-spl/                  — spl namespace root
+spl/                  — spl namespace root (lib/spl symlink)
   avsc-rpc/           — spl.avsc.rpc (RPC layer)
     protocol.js       — RPC protocol definition
     display.js        — human-readable rendering
     server/index.js   — RPC server, TCP transport
-    cli/index.js      — CLI client
+    cli/index.js      — CLI client, multi-client identity
   mycelium/           — spl.mycelium (fabric)
     runtime.js        — Bare runtime essentials
     resolve.js        — repo root resolution
     schema.js         — schema loader + helpers
-    test-client.js    — in-memory test script
     process/          — spl.mycelium.process
       dispatch/index.js — namespace-path handler resolution
-      execute/index.js  — execution context (peel onion)
+      execute/index.js  — execution context, response type packing
     xpath/            — spl.mycelium.xpath
-      raw/uri/
-        get/index.js    — rawuri get
-        put/index.js    — rawuri put
-        remove/index.js — rawuri remove
-        helpers.js      — shared: path resolution, args decoding
+      helpers.js        — schema resolution, into-file navigation
+      raw/              — raw visibility + schema aware
+      data/             — data visibility (hides _) + schema aware
+      metadata/         — metadata visibility + schema aware
+      raw/uri/          — raw URI (no schema)
+      data/uri/         — data URI
+      metadata/uri/     — metadata URI
+    git/              — spl.mycelium.git
+      status/           — git status (two-reality)
+      log/              — git log
+      diff/             — git diff
+      add/              — git add
+      commit/           — git commit
+      push/             — git push (subtree-aware)
+      pull/             — git pull (subtree-aware)
+      subtree/          — subtree management
+        list/ register/ pull/ push/ add/
 
 _schema/              — local schema registry (metadata)
   alias-mapping.txt   — stream type → data schema
+  uri-schema.txt      — URI → schema (for schema-aware xpath)
   spl/data/           — AVRO data schemas
-    stream/
-      record/schema.avsc    — common stream record
-      descriptor/schema.avsc — { type } dispatch info
-      operator/schema.avsc  — base: { args, value }
-    mycelium/
-      process/
-        execute/schema.avsc — { args, value, mode, root }
-      xpath/
-        node/schema.avsc    — { type, created, modified, value: { type, length, contents } }
+    stream/             — stream record, descriptor, operator
+    mycelium/process/   — execute context
+    mycelium/xpath/     — node record
+    mycelium/git/       — status, log, diff, subtree
 
+_client/              — default client identity
+  context.txt         — command → stream type mapping
+_test/                — test framework (subtree: spl5.test)
+  _client/context.txt — test client identity
+  suites/             — test suite files
+  resources/          — test fixtures
+  harness.js          — spl executor + assertions
+  runner.js           — suite loader + reporter
 _server/              — server instance (logs, state)
-bin/                  — entry points (spl, spl-server, setup)
-lib/                  — all dependencies
-  avsc/              — AVRO types/serialization (subtree)
-  avsc-rpc/          — AVRO RPC protocol (subtree)
+.gittrees             — subtree prefix → remote → branch
+
+bin/                  — entry points
+  spl                 — global CLI (~/.local/bin/spl)
+  spl-server          — RPC server
+  spl-test            — test runner
+  setup               — platform deps installer
+
+lib/                  — dependencies
+  avsc/              — AVRO types (subtree: bare-for-pear/avsc)
+  avsc-rpc/          — AVRO RPC (subtree: bare-for-pear/avsc-rpc)
+  git/               — git operations (subtree: bare-for-pear/git)
+  spl -> ../spl      — namespace require symlink
   bare-*/            — platform deps (gitignored)
-docs/                — DECISIONS.md, MESSAGE.md, design submissions
+
+docs/                — DECISIONS.md, design submissions
 ```
 
 - **Bare only** — no Node.js, no dual-runtime
@@ -102,44 +127,39 @@ docs/                — DECISIONS.md, MESSAGE.md, design submissions
 
 ## What Works
 
-- Stream record schema (spl.data.stream.record)
-  with resolved descriptor union in headers
-- Dispatch resolves handlers from namespace path:
-  spl.mycelium.process.execute → spl/mycelium/process/execute/index.js
-- process.execute peels onion, unpacks execution context,
-  propagates to inner record, packs at boundary
-- rawuri get: returns node record { type, created,
-  modified, value: { type, length, contents } }
-- rawuri put: writes value to path
-- rawuri remove: removes node
-- Execution context: root = { repo (absolute), local
-  (relative from repo root, starting with /) }
-- Path resolution: / = local root, always forward
-- Schema registry: _schema with schema.avsc convention,
-  alias-mapping.txt
-- AVRO RPC protocol over TCP on Bare
-- Global CLI: `spl <schema> [key] [args...]`
-- Schema-aware display: decodes known types in headers
+- AVRO RPC server + CLI over TCP on Bare
+- Stream record with resolved descriptor union in headers
+- Dispatch from namespace path (no registration)
+- Execute handler: peel onion, pack at boundary
+- Response type header for non-NodeRecord schemas
+- 6 URI protocols: raw/data/metadata × get/put/remove
+  (visibility filtering, no schema interpretation)
+- 6 schema-aware protocols: raw/data/metadata × get/put/remove
+  (type resolution: schema → extension → binary,
+  into-file JSON navigation via xpath addressing)
+- lib/git: git operations module (status, log, diff,
+  add, commit, push, pull, subtree management)
+- spl.mycelium.git: thin protocol handlers on lib/git
+- Two-reality model: repo vs subtree based on local root
+- .gittrees: subtree prefix → remote → branch mapping
+- Multi-client identity: _<name>/_client/context.txt
+- CLI context aliases with modifiers (raw, meta)
+- Test framework: 29 tests, harness + runner + suites
+- 4 subtrees registered (avsc, avsc-rpc, git, _test)
 
-## Current Work
+## Key Principles
 
-Implementing rawuri with proper node record responses.
-Key principles being applied:
-
-- Node response is structured (type, timestamps, value).
-  Only value.contents is opaque bytes.
-- Pack at boundary only — handlers return plain objects,
-  serialization happens when crossing RPC/onion boundary.
-  AVRO (NodeRecord.toBuffer), not JSON.
+- Pack at boundary only — plain objects in memory, AVRO
+  at RPC/onion crossings
 - Read with fallback — try schema decode, fall back to
-  plain object if already unpacked.
-- / means local root. Paths resolve forward only.
-  URIs returned are relative to local root.
-- Functional resolution walks UP from local root to
-  repo root (ancestor axis). Data scope walks DOWN
-  from local root (descendants only).
+  plain object if already unpacked
+- / means local root, paths resolve forward only
+- Handlers are thin — infrastructure in lib/, protocol
+  in spl/. Same pattern for git, rpc-server (planned)
+- Client owns its language — context mappings translate
+  to stream types. Identity travels with subject reality
 
-## POC Sequence
+## POC Sequence (complete)
 
 1. ~~AVRO RPC server~~ ✓
 2. ~~CLI submitting to server~~ ✓
@@ -147,8 +167,41 @@ Key principles being applied:
 4. ~~rawuri get/put/remove~~ ✓
 5. ~~datauri, metadatauri~~ ✓
 6. ~~Schema-aware protocols (raw/data/metadata)~~ ✓
-7. ~~Protocol resolution in cli.execute~~ ✓ (stream types are the protocol)
-8. Context stream types with colocated mappings (roadmap)
+7. ~~Protocol resolution in cli.execute~~ ✓
+8. ~~lib/git + spl.mycelium.git~~ ✓
+9. ~~Test framework (spl5.test subtree)~~ ✓
+10. ~~Multi-client identity~~ ✓
+
+## Roadmap
+
+### Next: lib/rpc-server — server infrastructure module
+
+Extract server lifecycle from spl/avsc-rpc/server to
+lib/rpc-server. Same pattern as lib/git: infrastructure
+in lib/, thin protocol layer in spl/.
+
+- Server lifecycle: start, stop, restart
+- File-based command IPC: _server/cmd/ watcher
+  (drop `shutdown`, `restart` files)
+- Request logging (currently in server handler)
+- Test runner integration (auto-start, auto-shutdown)
+
+### Pending: context stream types
+
+Context registration layer. Three mapping concerns:
+1. Data schema (alias-mapping.txt — done)
+2. Stream type (namespace dispatch — done)
+3. Context type (protocol availability per node — roadmap)
+
+Context aliases (spl.context.*) with colocated mappings.
+Versioning as stream type internal concern.
+
+### Identified improvements
+
+- Test runner: auto-start/stop server for test runs
+- CLAUDE.md: update codebase structure section
+- docs/DECISIONS.md: document lib/git, multi-client,
+  response type header decisions
 
 ## Key Design Decisions
 

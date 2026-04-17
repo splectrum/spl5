@@ -43,4 +43,8 @@ git.add             spl.mycelium.git.add
 git.commit          spl.mycelium.git.commit
 git.push            spl.mycelium.git.push
 git.pull            spl.mycelium.git.pull
-git.subtree.list    spl.mycelium.git.subtree.list
+git.subtree.list      spl.mycelium.git.subtree.list
+git.subtree.register  spl.mycelium.git.subtree.register
+git.subtree.pull      spl.mycelium.git.subtree.pull
+git.subtree.push      spl.mycelium.git.subtree.push
+git.subtree.add       spl.mycelium.git.subtree.add
