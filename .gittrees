@@ -3,3 +3,4 @@
 lib/avsc	bare-for-pear-avsc	main
 lib/avsc-rpc	bare-for-pear-avsc-rpc	main
 lib/git	bare-for-pear-git	main
+_test	spl5-test	main
