@@ -178,7 +178,22 @@ docs/                — DECISIONS.md, design submissions
 
 ## Roadmap
 
-### Next: context stream types
+### Next: CLI argument mapping from schema
+
+The CLI currently assumes xpath-shaped arguments
+(key=path, value=content). Git operations don't fit —
+git.commit has a message, not a key/value pair.
+
+The schema already describes the operator bag. The CLI
+should derive argument mapping from the schema: what
+arguments exist, their names, their types. A help flag
+(spl git.commit --help) should show the user how to
+call the command, generated from the schema.
+
+This is the bridge between "the schema describes the
+shape" and "the client speaks its own language."
+
+### Then: context stream types
 
 Context registration layer. Three mapping concerns:
 1. Data schema (alias-mapping.txt — done)
