@@ -370,3 +370,103 @@ avoid self-reference in Bare's module resolution.
 **Why:** `require('../../../../schema.js')` is
 unreadable and fragile. The namespace is the path —
 the require should reflect that.
+
+## 2026-04-17
+
+### Infrastructure in lib/, protocols thin in spl/
+
+Infrastructure modules (git, future rpc-server) live
+in `lib/` as standalone modules. Protocol handlers in
+`spl/` are thin wrappers — read context, call lib
+module, format response. ~20 lines per handler.
+
+**Why:** Conflating subprocess execution, output
+parsing, and state management with protocol dispatch
+creates fat handlers. Separate layers mean the
+infrastructure can be tested standalone, reused, and
+potentially extracted to its own repo.
+
+### lib/git — git operations for Bare
+
+Standalone module at `lib/git/`. Provides: exec
+(spawnSync wrapper), status, log, diff, add, commit,
+push, pull. Subtree management: load/register/pull/
+push/add with .gittrees validation. Reality detection
+from local root position.
+
+Uses `bare-subprocess` spawnSync for synchronous git
+execution. The sync/async problem is solved once in
+the infrastructure layer, not in every handler.
+
+**Why:** git subtree commands are stateless and
+error-prone. The module makes them stateful (via
+.gittrees) and safe (validates prefix↔remote).
+
+### .gittrees — subtree registration
+
+Flat file at repo root, committed. Three columns:
+prefix, remote name, branch. Read by lib/git, used
+by spl.mycelium.git handlers.
+
+**Why:** git subtree doesn't persist prefix-to-remote
+mappings anywhere. The operator must remember. This
+file makes the mapping explicit and validated.
+
+### Two-reality model for git operations
+
+When invoked from repo root: full repo scope.
+When invoked from inside a registered subtree:
+operations scope to that subtree — its remote, its
+branch, its prefix. `detectReality()` compares
+`root.local` against .gittrees entries.
+
+Same commands, different behaviour based on position.
+Push/pull auto-delegate to subtree operations when
+in subtree reality.
+
+**Why:** A subtree is a referenced repo with its own
+identity. Position determines which reality you
+operate in. The fabric resolves it, not the operator.
+
+### Response type header for boundary packing
+
+Handlers set `spl.data.response.type` header with the
+schema name. The execute handler reads it and packs
+with that schema instead of the default NodeRecord.
+Falls back to NodeRecord if no header.
+
+**Replaces:** hardcoded NodeRecord.toBuffer in
+packValue. Each new response shape (git status, log,
+subtree list) would have needed its own case.
+
+**Why:** Extensible boundary packing. The handler
+declares its response type, the boundary respects it.
+
+### Multi-client identity
+
+Client identities live in metadata nodes:
+`_<name>/_client/context.txt`. The CLI checks if the
+first argument matches a metadata node with a client
+context file. If yes, that context is used for command
+resolution.
+
+The test client at `_test/_client/context.txt` travels
+with the test repo (spl5.test subtree). No test
+config in the main repo's `_client/`.
+
+**Why:** Different entities speak different languages.
+The test client speaks test language, the default
+client speaks xpath/git language. Same fabric, same
+dispatch, different vocabulary. Identity travels with
+subject reality.
+
+### Test framework: full chain, no mocking
+
+Tests spawn the spl CLI as a subprocess, sending real
+RPC requests to a running server. Full chain: CLI →
+RPC → server → dispatch → handler → response →
+extraction. No mocking, no shortcuts.
+
+**Why:** Mock tests can pass while the real system
+fails. The test harness exercises the same path as
+the user. If the test passes, the feature works.
