@@ -253,3 +253,120 @@ no structure.
 **Why:** From the ref lib — raw is the unfiltered
 physical reality. Data and metadata are lenses on
 it. The node envelope is fabric knowledge.
+
+### Three mapping layers (roadmap)
+
+Registration serves three distinct concerns, each
+with its own mapping:
+
+1. **Data schema** — stream type → AVRO schema.
+   `alias-mapping.txt` in `_schema/`. Done.
+
+2. **Stream type** — namespace path → handler code.
+   Dispatch via `require(spl/path/to/handler)`. Done.
+
+3. **Context type** — what protocols are available at
+   a given node, scoped by local root. This is the
+   registration layer. A node registers which stream
+   types are available at its scope, with defaults.
+
+Context examples:
+- Repo root `/` registers `context.xpath = {raw, data,
+  metadata}` — full access at root scope only.
+- Deeper nodes default to `context.xpath = {data}` —
+  metadata managed behind the scenes, raw is opt-in.
+- Normal operation resolves `xpath` to `xpath.data`.
+  The caller asks for a capability, the context
+  resolves it to a stream type.
+
+Versioning is not a namespace concern. A v2
+implementation is a different stream type. The context
+mapping points to it. Execution context metadata
+carries version-specific state. Version is internal
+to the stream type, not visible to the caller.
+
+**Current approach:** stream types are used as if
+globally registered. No context registration layer
+yet. Context scoping is a roadmap item — the mapping
+structure (data schema, stream type, context type)
+will be tackled once the stream type layer is proven.
+
+**Why:** Three concerns, three layers. Conflating
+them creates coupling. Data schemas describe shape.
+Stream types name handlers. Context types scope
+availability. Each evolves independently.
+
+### URI protocols: visibility without schema
+
+The `.uri` protocols (`raw.uri`, `data.uri`,
+`metadata.uri`) operate on the filesystem with
+visibility filtering but no schema interpretation.
+File content type is always `binary`. These are the
+base addressing layer.
+
+**Why:** Separation of URI addressing from schema
+interpretation. URI protocols deal with bytes. Schema
+awareness is a higher concern.
+
+### Schema-aware protocols: type resolution + navigation
+
+The schema-aware protocols (`raw`, `data`, `metadata`
+without `.uri`) add schema resolution on top of their
+corresponding URI protocol's visibility rules.
+
+Value type resolution: registered schema (from
+`_schema/uri-schema.txt`) → file extension → `binary`.
+
+When a file has a registered schema or is parseable
+JSON, xpath addressing can navigate into the file
+structure. Internal records become addressable nodes.
+
+**Why:** Schema makes files navigable. The same file
+is opaque bytes via URI protocol and a structured
+tree via schema-aware protocol. Two lenses on the
+same reality.
+
+### UTF-8 as the text encoding
+
+All text in the system is UTF-8. No negotiation, no
+detection, no conversion. If it's text, it's UTF-8.
+
+**Why:** One encoding eliminates a class of bugs.
+Everything speaks UTF-8 already.
+
+### File extension as schema fallback
+
+For schema-aware protocols, the file extension is
+the value type when no schema is registered. `.json`
+→ type `json`, `.js` → type `js`. Falls back to
+`binary` when no extension.
+
+**Why:** The extension is already there and
+well-understood. It's the simplest true thing about
+a file's content type.
+
+### Operator input in function arguments, not record value
+
+Put data goes in the operator bag's `value` field
+(function argument), not in the stream record's
+`value` field. Record value is output — what the
+handler produces.
+
+**Replaces:** putting write data in record value
+(key → value mapping). The Kafka analogy breaks
+here — in the handler contract, value is return
+value, input goes in the operator bag.
+
+**Why:** How does a function work? Input in
+arguments, output in return value.
+
+### lib/spl symlink for namespace requires
+
+`lib/spl → ../spl` with `spl/package.json` enables
+`require('spl/mycelium/schema')` instead of relative
+path traversals. Root package renamed to `spl5` to
+avoid self-reference in Bare's module resolution.
+
+**Why:** `require('../../../../schema.js')` is
+unreadable and fragile. The namespace is the path —
+the require should reflect that.

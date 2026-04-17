@@ -144,10 +144,11 @@ Key principles being applied:
 1. ~~AVRO RPC server~~ ✓
 2. ~~CLI submitting to server~~ ✓
 3. ~~Stream record redesign~~ ✓
-4. **rawuri get/put/remove** — in progress
-5. Register rawuri on repo root node
-6. Protocol resolution in cli.execute
-7. Expand: datauri, metadatauri
+4. ~~rawuri get/put/remove~~ ✓
+5. ~~datauri, metadatauri~~ ✓
+6. ~~Schema-aware protocols (raw/data/metadata)~~ ✓
+7. ~~Protocol resolution in cli.execute~~ ✓ (stream types are the protocol)
+8. Context stream types with colocated mappings (roadmap)
 
 ## Key Design Decisions
 

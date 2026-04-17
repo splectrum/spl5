@@ -1,0 +1,36 @@
+# Client context mapping
+# Short name → stream type
+#
+# These are context aliases. The CLI resolves short
+# names before building the request. Full stream
+# types still work directly.
+
+# xpath data (default lens)
+get         spl.mycelium.xpath.data.get
+put         spl.mycelium.xpath.data.put
+remove      spl.mycelium.xpath.data.remove
+
+# xpath data uri (no schema)
+uri.get     spl.mycelium.xpath.data.uri.get
+uri.put     spl.mycelium.xpath.data.uri.put
+uri.remove  spl.mycelium.xpath.data.uri.remove
+
+# xpath raw
+raw.get     spl.mycelium.xpath.raw.get
+raw.put     spl.mycelium.xpath.raw.put
+raw.remove  spl.mycelium.xpath.raw.remove
+
+# xpath raw uri
+raw.uri.get     spl.mycelium.xpath.raw.uri.get
+raw.uri.put     spl.mycelium.xpath.raw.uri.put
+raw.uri.remove  spl.mycelium.xpath.raw.uri.remove
+
+# xpath metadata
+meta.get    spl.mycelium.xpath.metadata.get
+meta.put    spl.mycelium.xpath.metadata.put
+meta.remove spl.mycelium.xpath.metadata.remove
+
+# xpath metadata uri
+meta.uri.get    spl.mycelium.xpath.metadata.uri.get
+meta.uri.put    spl.mycelium.xpath.metadata.uri.put
+meta.uri.remove spl.mycelium.xpath.metadata.uri.remove
