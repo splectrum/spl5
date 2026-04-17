@@ -9,6 +9,7 @@ lib/bare-assert/
 lib/bare-buffer/
 lib/bare-crypto/
 lib/bare-dns/
+lib/bare-env/
 lib/bare-events/
 lib/bare-fs/
 lib/bare-inspect/
@@ -17,6 +18,7 @@ lib/bare-os/
 lib/bare-path/
 lib/bare-pipe/
 lib/bare-stream/
+lib/bare-subprocess/
 lib/bare-tcp/
 lib/bare-type/
 lib/bare-url/

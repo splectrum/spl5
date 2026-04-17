@@ -1,0 +1,4 @@
+# .gittrees — subtree prefix → remote → branch
+# Committed to repo. Read by lib/git and spl.mycelium.git.
+lib/avsc	bare-for-pear-avsc	main
+lib/avsc-rpc	bare-for-pear-avsc-rpc	main
