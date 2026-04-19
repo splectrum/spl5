@@ -1,0 +1,50 @@
+{
+  "type": "record",
+  "name": "help",
+  "namespace": "spl.data.mycelium.process",
+  "doc": "Help response for a stream type",
+  "fields": [
+    {
+      "name": "streamType",
+      "type": "string",
+      "doc": "The stream type this help describes"
+    },
+    {
+      "name": "description",
+      "type": "string",
+      "doc": "What the command does"
+    },
+    {
+      "name": "inputs",
+      "type": {
+        "type": "array",
+        "items": {
+          "type": "record",
+          "name": "input_field",
+          "namespace": "spl.data.mycelium.process",
+          "doc": "Description of one input field",
+          "fields": [
+            { "name": "position", "type": "string", "doc": "key, value, or args" },
+            { "name": "name", "type": "string", "doc": "Human-readable field name" },
+            { "name": "fieldType", "type": "string", "doc": "Expected data type" },
+            { "name": "required", "type": "boolean" },
+            { "name": "doc", "type": "string", "doc": "Description of this input" }
+          ]
+        }
+      },
+      "default": []
+    },
+    {
+      "name": "output",
+      "type": {
+        "type": "record",
+        "name": "output_info",
+        "namespace": "spl.data.mycelium.process",
+        "fields": [
+          { "name": "type", "type": ["null", "string"], "default": null, "doc": "Response schema name" },
+          { "name": "doc", "type": "string", "doc": "Description of the output" }
+        ]
+      }
+    }
+  ]
+}

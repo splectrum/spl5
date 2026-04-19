@@ -113,7 +113,7 @@ lib/                  — dependencies
   avsc/              — AVRO types (subtree: bare-for-pear/avsc)
   avsc-rpc/          — AVRO RPC (subtree: bare-for-pear/avsc-rpc)
   git/               — git operations (subtree: bare-for-pear/git)
-  rpc-server/        — server lifecycle, PID, IPC, logging
+  rpc-server/        — server lifecycle, PID, IPC, logging (subtree: bare-for-pear/rpc-server)
   spl -> ../spl      — namespace require symlink
   bare-*/            — platform deps (gitignored)
 
@@ -148,8 +148,11 @@ docs/                — DECISIONS.md, design submissions
 - .gittrees: subtree prefix → remote → branch mapping
 - Multi-client identity: _<name>/_client/context.txt
 - CLI context aliases with modifiers (raw, meta)
-- Test framework: 29 tests, harness + runner + suites
-- 4 subtrees registered (avsc, avsc-rpc, git, _test)
+- Test framework: 66 tests, module-organized suites
+  (lib/git 19, lib/rpc-server 18, xpath 18, git 11)
+- 5 subtrees registered (avsc, avsc-rpc, git, rpc-server, _test)
+- lib/git: remote management + configurable platform
+  (GitHub default, pluggable)
 
 ## Key Principles
 
@@ -178,20 +181,19 @@ docs/                — DECISIONS.md, design submissions
 
 ## Roadmap
 
-### Next: CLI argument mapping from schema
+### Next: help system + CLI argument mapping
 
-The CLI currently assumes xpath-shaped arguments
-(key=path, value=content). Git operations don't fit —
-git.commit has a message, not a key/value pair.
+help.json per handler directory describes inputs (name,
+type, position, doc). A help handler (spl.mycelium.process.help)
+reads these and returns structured help. CLI --help flag.
 
-The schema already describes the operator bag. The CLI
-should derive argument mapping from the schema: what
-arguments exist, their names, their types. A help flag
-(spl git.commit --help) should show the user how to
-call the command, generated from the schema.
+Plan approved. Schema started (_schema/spl/data/mycelium/
+process/help/schema.avsc created). Implementation next.
 
-This is the bridge between "the schema describes the
-shape" and "the client speaks its own language."
+Phase 1: help handler, 5 representative help.json files,
+CLI --help flag. Phase 2: all ~35 help.json files, list
+mode. Phase 3: CLI reads help metadata to map positional
+args to named fields (spl git.commit "msg" just works).
 
 ### Then: context stream types
 
@@ -206,7 +208,6 @@ Versioning as stream type internal concern.
 ### Identified improvements
 
 - Test runner: auto-start/stop server for test runs
-- docs/DECISIONS.md: document lib/rpc-server decisions
 
 ## Key Design Decisions
 
