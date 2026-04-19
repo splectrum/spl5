@@ -181,19 +181,24 @@ docs/                — DECISIONS.md, design submissions
 
 ## Roadmap
 
-### Next: help system + CLI argument mapping
+### Next: schema review + help system
 
-help.json per handler directory describes inputs (name,
-type, position, doc). A help handler (spl.mycelium.process.help)
-reads these and returns structured help. CLI --help flag.
+1. Review all existing AVRO schemas for completeness,
+   add doc fields, fix missing information. The schemas
+   are the source of truth — they need to be right before
+   the help system reads from them.
 
-Plan approved. Schema started (_schema/spl/data/mycelium/
-process/help/schema.avsc created). Implementation next.
+2. help.json per handler directory describes inputs (name,
+   type, position, doc). Help handler (spl.mycelium.process.help)
+   reads these and returns structured help. CLI --help flag.
 
-Phase 1: help handler, 5 representative help.json files,
-CLI --help flag. Phase 2: all ~35 help.json files, list
-mode. Phase 3: CLI reads help metadata to map positional
-args to named fields (spl git.commit "msg" just works).
+   Plan approved. Schema started (_schema/spl/data/mycelium/
+   process/help/schema.avsc created). Implementation next.
+
+   Phase 1: help handler, 5 representative help.json files,
+   CLI --help flag. Phase 2: all ~35 help.json files, list
+   mode. Phase 3: CLI reads help metadata to map positional
+   args to named fields (spl git.commit "msg" just works).
 
 ### Then: context stream types
 
